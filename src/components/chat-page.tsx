@@ -437,7 +437,7 @@ export function ChatPage({
                 <button
                   key={s}
                   onClick={() => handleSend(s)}
-                  className="rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-ring hover:bg-accent"
+                  className="rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
                 >
                   {s}
                 </button>
