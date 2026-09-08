@@ -7,6 +7,11 @@
  * <AssistinoChat />) further down, and so are the theme tokens, so embedding
  * the widget cannot leak colors or fonts into the page around it.
  */
+/* Declare layer order up front. Without this, layers are ordered by first
+   appearance (theme, utilities, then our base reset below), and the reset
+   would override every utility on buttons, borders, padding and radius. */
+@layer theme, base, components, utilities;
+
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
