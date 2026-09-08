@@ -422,7 +422,7 @@ export function ChatPage({
       {/* messages */}
       <div className="scrollbar-thin flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center">
+          <div className="flex h-full w-full flex-col  gap-6 px-4 ">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
               <Sparkles className="h-7 w-7" />
             </div>
