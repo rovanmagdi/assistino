@@ -1,0 +1,63 @@
+{
+  "name": "@assistino/react-agent-chat",
+  "version": "0.1.0",
+  "description": "Embeddable React chat UI for the Assistino ReAct agent — streamed answers with a live timeline of the agent's reasoning, tool calls, and observations.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": ["**/*.css", "./dist/styles.js"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./fonts.css": "./src/styles/fonts.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src/styles/fonts.css",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build:demo": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/space-grotesk": "^5.2.10",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.577.0",
+    "motion": "^12.34.0",
+    "plotly.js-dist-min": "^3.7.0",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

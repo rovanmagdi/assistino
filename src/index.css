@@ -1,0 +1,17 @@
+/**
+ * index.css — stylesheet for the standalone demo app (demo/main.tsx) only.
+ * Package consumers import dist/style.css, built from styles/lib.css, which
+ * carries no global reset. Here the widget owns the whole page, so preflight
+ * and page-level styling are welcome.
+ */
+@import "tailwindcss/preflight.css" layer(base);
+@import "./styles/lib.css";
+@import "./styles/fonts.css";
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}

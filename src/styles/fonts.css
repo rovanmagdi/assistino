@@ -1,0 +1,11 @@
+/**
+ * fonts.css — optional. The widget's type stack asks for Inter and Space
+ * Grotesk and falls back to system fonts when they are absent, so importing
+ * this is a choice, not a requirement:
+ *
+ *     import "@assistino/react-agent-chat/fonts.css";
+ *
+ * It self-hosts both families (no Google Fonts request) via @fontsource.
+ */
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/space-grotesk";
