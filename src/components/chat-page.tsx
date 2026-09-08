@@ -422,7 +422,7 @@ export function ChatPage({
       {/* messages */}
       <div className="scrollbar-thin flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center gap-6 px-4 text-center">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
               <Sparkles className="h-7 w-7" />
             </div>
@@ -445,7 +445,7 @@ export function ChatPage({
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+          <div className="w-full space-y-6 px-4 py-6">
             {messages.map((m) =>
               m.role === "user" ? (
                 <UserMessage key={m.id} message={m} />

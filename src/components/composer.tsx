@@ -110,7 +110,7 @@ export function Composer({
   const actions: ComposerActions = { submit, stop: onStop, streaming, value };
 
   return (
-    <div className={cn("mx-auto w-full max-w-3xl px-4 pb-4", className)}>
+    <div className={cn("w-full px-4 pb-4", className)}>
       <div
         className={cn(
           "flex items-end gap-2 rounded-2xl border border-input bg-card p-2 shadow-sm transition-colors focus-within:border-ring",
