@@ -1,23 +1,94 @@
 import type { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
-import { ChatRoot, type ChatRootProps } from "./chat-root";
-import {
-  ChatBody,
-  ChatHeader,
-  ChatInput,
-  type ChatBodyClassNames,
-  type ChatBodyProps,
-  type ComposerRenderApi,
-} from "./chat-parts";
+import { ChatRoot, useChat, type ChatRootProps } from "./chat-root";
+import { ChatBody, ChatHeader, ChatInput, type ComposerRenderApi } from "./chat-parts";
 import type { ComposerOptions } from "./composer";
+import { cn } from "../lib/utils";
+
+export const DEFAULT_SUGGESTIONS = [
+  "Search the web for the latest news on AI agents",
+  "Find LinkedIn candidates for a senior backend role",
+  "What HR positions are open in my company?",
+];
+
+/** Class hooks for the default empty state — see {@link AssistinoChatProps.bodyClassNames}. */
+export interface ChatBodyClassNames {
+  /** The empty-state container (a flex column). */
+  emptyState?: string;
+  /** The heading. */
+  title?: string;
+  /** The line under the heading. */
+  description?: string;
+  /** The list wrapping the suggestion buttons. */
+  suggestions?: string;
+  /** Each suggestion button. */
+  suggestion?: string;
+}
+
+/** The welcome screen <AssistinoChat /> shows before the first message. */
+export function DefaultEmptyState({
+  suggestions = DEFAULT_SUGGESTIONS,
+  title = "What can I help you with?",
+  description = "Watch the agent reason, call tools, and observe results in real time.",
+  icon,
+  classNames,
+}: {
+  suggestions?: string[];
+  title?: ReactNode;
+  description?: ReactNode;
+  icon?: ReactNode;
+  classNames?: ChatBodyClassNames;
+}) {
+  const { send } = useChat();
+  return (
+    <div className={cn("flex h-full w-full flex-col gap-6 px-4", classNames?.emptyState)}>
+      {icon === undefined ? (
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+          <Sparkles className="h-7 w-7" />
+        </div>
+      ) : (
+        icon
+      )}
+      <div>
+        <h2 className={cn("font-heading text-xl font-semibold", classNames?.title)}>{title}</h2>
+        {description && (
+          <p className={cn("mt-1 text-sm text-muted-foreground", classNames?.description)}>
+            {description}
+          </p>
+        )}
+      </div>
+      {suggestions.length > 0 && (
+        <div className={cn("flex w-full flex-col gap-2", classNames?.suggestions)}>
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => send(s)}
+              className={cn(
+                "rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary",
+                classNames?.suggestion,
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export type { ComposerRenderApi } from "./chat-parts";
 
 /** Props of the packaged widget — every one of them optional. */
-export interface AssistinoChatProps
-  extends Omit<ChatRootProps, "children">,
-    Pick<ChatBodyProps, "suggestions" | "emptyStateTitle" | "emptyStateDescription"> {
-  /** Restyle the empty state and transcript — see {@link ChatBodyClassNames}. */
+export interface AssistinoChatProps extends Omit<ChatRootProps, "children"> {
+  /** Prompts offered on the empty state. Pass [] for none. */
+  suggestions?: string[];
+  /** Empty-state heading. Defaults to "What can I help you with?". */
+  emptyStateTitle?: ReactNode;
+  /** Line under the empty-state heading. Pass `null` for none. */
+  emptyStateDescription?: ReactNode;
+  /** Restyle the empty state — see {@link ChatBodyClassNames}. */
   bodyClassNames?: ChatBodyClassNames;
   /** Icon shown above the empty-state heading. Pass `null` for none. */
   emptyStateIcon?: ReactNode;
@@ -114,13 +185,15 @@ export function ChatPage({
           showSettings={showSettings}
         />
       )}
-      <ChatBody
-        suggestions={suggestions}
-        emptyStateTitle={emptyStateTitle}
-        emptyStateDescription={emptyStateDescription}
-        icon={emptyStateIcon}
-        classNames={bodyClassNames}
-      />
+      <ChatBody>
+        <DefaultEmptyState
+          suggestions={suggestions}
+          title={emptyStateTitle}
+          description={emptyStateDescription}
+          icon={emptyStateIcon}
+          classNames={bodyClassNames}
+        />
+      </ChatBody>
       <ChatInput
         {...composer}
         placeholder={composer?.placeholder ?? placeholder}

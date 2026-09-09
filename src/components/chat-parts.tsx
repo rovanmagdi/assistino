@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Sparkles, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Composer, type ComposerOptions } from "./composer";
 import { ThemeToggle } from "./theme-toggle";
@@ -120,64 +120,24 @@ export function ChatHeader({
 // Body
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const DEFAULT_SUGGESTIONS = [
-  "Search the web for the latest news on AI agents",
-  "Find LinkedIn candidates for a senior backend role",
-  "What HR positions are open in my company?",
-];
-
 export interface ChatBodyProps {
-  /** Prompts offered on the empty state. Pass [] for none. */
-  suggestions?: string[];
-  /** Empty-state heading. Defaults to "What can I help you with?". */
-  emptyStateTitle?: ReactNode;
-  /** Line under the empty-state heading. Pass `null` for none. */
-  emptyStateDescription?: ReactNode;
   /**
-   * Replace the sparkle badge above the empty-state heading — any node, e.g.
-   * `<img src={logo} />` or a lucide icon. Pass `null` for none.
-   */
-  icon?: ReactNode;
-  /** Replace the whole empty state. Gets `send` so custom prompts can fire. */
-  renderEmptyState?: (api: { send: (text: string) => void }) => ReactNode;
-  /**
-   * Restyle pieces of the empty state. Classes are merged onto the defaults
-   * (conflicting Tailwind utilities are resolved in your favor):
+   * What to show before the first message — a welcome, a logo, your own
+   * prompt buttons. Nothing renders by default. Call `useChat().send` from
+   * inside it to fire a prompt:
    *
    * ```tsx
-   * <ChatBody classNames={{ title: "text-2xl text-primary", description: "hidden" }} />
+   * <ChatBody>
+   *   <Welcome />
+   * </ChatBody>
    * ```
    */
-  classNames?: ChatBodyClassNames;
-  className?: string;
+  children?: ReactNode;
 }
 
-export interface ChatBodyClassNames {
-  /** The empty-state container (a flex column). */
-  emptyState?: string;
-  /** The heading. */
-  title?: string;
-  /** The line under the heading. */
-  description?: string;
-  /** The list wrapping the suggestion buttons. */
-  suggestions?: string;
-  /** Each suggestion button. */
-  suggestion?: string;
-  /** The transcript container once there are messages. */
-  transcript?: string;
-}
-
-/** The scrolling transcript, or the empty state before the first message. */
-export function ChatBody({
-  suggestions = DEFAULT_SUGGESTIONS,
-  emptyStateTitle = "What can I help you with?",
-  emptyStateDescription = "Watch the agent reason, call tools, and observe results in real time.",
-  icon,
-  renderEmptyState,
-  classNames,
-  className,
-}: ChatBodyProps) {
-  const { messages, isEmpty, send } = useChat();
+/** The scrolling transcript, or `children` before the first message. */
+export function ChatBody({ children }: ChatBodyProps) {
+  const { messages, isEmpty } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -185,50 +145,11 @@ export function ChatBody({
   }, [messages]);
 
   return (
-    <div className={cn("scrollbar-thin flex-1 overflow-y-auto", className)}>
+    <div className="scrollbar-thin flex-1 overflow-y-auto">
       {isEmpty ? (
-        renderEmptyState ? (
-          renderEmptyState({ send })
-        ) : (
-          <div className={cn("flex h-full w-full flex-col gap-6 px-4", classNames?.emptyState)}>
-            {icon === undefined ? (
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <Sparkles className="h-7 w-7" />
-              </div>
-            ) : (
-              icon
-            )}
-            <div>
-              <h2 className={cn("font-heading text-xl font-semibold", classNames?.title)}>
-                {emptyStateTitle}
-              </h2>
-              {emptyStateDescription && (
-                <p className={cn("mt-1 text-sm text-muted-foreground", classNames?.description)}>
-                  {emptyStateDescription}
-                </p>
-              )}
-            </div>
-            {suggestions.length > 0 && (
-              <div className={cn("flex w-full flex-col gap-2", classNames?.suggestions)}>
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => send(s)}
-                    className={cn(
-                      "rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary",
-                      classNames?.suggestion,
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )
+        children
       ) : (
-        <div className={cn("w-full space-y-6 px-4 py-6", classNames?.transcript)}>
+        <div className="w-full space-y-6 px-4 py-6">
           {messages.map((m) =>
             m.role === "user" ? (
               <UserMessage key={m.id} message={m} />

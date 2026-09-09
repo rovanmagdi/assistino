@@ -247,7 +247,9 @@ import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agen
   <ChatHeader actions={<MyExportButton />}>   {/* extra controls beside the built-in ones */}
     <span className="text-lg font-bold">Welcome to Tendrix AI Chat</span>
   </ChatHeader>
-  <ChatBody suggestions={["Show open roles"]} />
+  <ChatBody>
+    <Welcome />                {/* shown until the first message; nothing by default */}
+  </ChatBody>
   <ChatInput placeholder="Ask anything…" hint={false} />
 </ChatRoot>
 ```
@@ -259,7 +261,7 @@ The same parts hang off the widget as `AssistinoChat.Root`, `.Header`,
 | --- | --- | --- |
 | `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | everything from the props table above except header/body/input options |
 | `ChatHeader` | title strip, Clear, theme toggle, settings menu | `children` (your content; nothing by default), or `icon` / `title` / `subtitle` for the two-line layout; `actions`, `showClear`, `showThemeToggle`, `showSettings` |
-| `ChatBody` | scrolling transcript and the empty state | `suggestions`, `emptyStateTitle`, `emptyStateDescription`, `icon`, `classNames` (`title`, `description`, `suggestion`, …), `renderEmptyState` |
+| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is the one `<AssistinoChat />` uses, if you want it |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
 
 Anything you render inside `ChatRoot` can call `useChat()` for the transcript
