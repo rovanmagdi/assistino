@@ -27,6 +27,9 @@ export { Composer } from "./components/composer";
 export type { ComposerOptions, ComposerActions } from "./components/composer";
 export { Markdown } from "./components/markdown";
 export { ThemeToggle } from "./components/theme-toggle";
+export { SettingsMenu } from "./components/settings-menu";
+export type { SettingsMenuProps } from "./components/settings-menu";
+export { CustomColorPicker } from "./components/color-picker";
 export { ToolResult } from "./components/tools/tool-result";
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
@@ -44,6 +47,10 @@ export { useTheme } from "./lib/use-theme";
 export type { ThemePreference, ResolvedTheme } from "./lib/use-theme";
 export { themeTokensToVars } from "./lib/theme-tokens";
 export type { ThemeTokens } from "./lib/theme-tokens";
+export { COLOR_THEMES, COLOR_THEME_OPTIONS, colorThemeVars } from "./lib/color-themes";
+export type { ColorTheme, CustomColorKey, Mode, NodeStyle } from "./lib/color-themes";
+export { useChatSettings } from "./lib/use-chat-settings";
+export type { ChatSettingsOptions } from "./lib/use-chat-settings";
 
 // ── domain types ──────────────────────────────────────────────────────────────
 export type { AgentEvent, ChatMessage, Role, TimelineStep } from "./types";

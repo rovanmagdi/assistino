@@ -64,6 +64,14 @@
   --primary-bright: oklch(0.7225 0.1218 237.21);    /* #4FB0E8 */
   --radius: 1.2rem;
 
+  /* Spacing scale — brand presets can tighten or loosen it via --spacing-unit. */
+  --spacing-unit: 0.25rem;
+  --space-xs: calc(var(--spacing-unit) * 1);
+  --space-sm: calc(var(--spacing-unit) * 2);
+  --space-md: calc(var(--spacing-unit) * 4);
+  --space-lg: calc(var(--spacing-unit) * 6);
+  --space-xl: calc(var(--spacing-unit) * 8);
+
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Space Grotesk Variable", var(--font-sans);
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -269,6 +277,32 @@
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Timeline rail markers — "dots" style (settings menu → Timeline). Replaces
+   each icon circle with a plain dot tinted by the step's tone.
+   ───────────────────────────────────────────────────────────────────────── */
+.assistino-chat.node-style-dots .step-node {
+  border-color: transparent;
+  background-color: transparent;
+}
+.assistino-chat.node-style-dots .step-node svg {
+  display: none;
+}
+.assistino-chat.node-style-dots .step-node::after {
+  content: "";
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: var(--muted-foreground);
+}
+.assistino-chat.node-style-dots .step-node[data-tone="accent"]::after {
+  background: var(--primary);
+}
+.assistino-chat.node-style-dots .step-node[data-tone="danger"]::after {
+  background: var(--destructive);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

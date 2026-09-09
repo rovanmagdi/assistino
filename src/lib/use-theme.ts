@@ -34,8 +34,10 @@ function systemPrefersDark(): boolean {
 export function useTheme(
   preference: ThemePreference,
   rootRef: RefObject<HTMLElement | null>,
+  /** A remembered user choice (e.g. from the settings menu) to start from. */
+  initialOverride: "light" | "dark" | null = null,
 ) {
-  const [override, setOverride] = useState<"light" | "dark" | null>(null);
+  const [override, setOverride] = useState<"light" | "dark" | null>(initialOverride);
   const [systemDark, setSystemDark] = useState(systemPrefersDark);
   const [inheritedDark, setInheritedDark] = useState(false);
 
@@ -80,6 +82,8 @@ export function useTheme(
 
   const isDark = resolved ? resolved === "dark" : inheritedDark;
   const toggle = useCallback(() => setOverride(isDark ? "light" : "dark"), [isDark]);
+  /** Pin light or dark for the session; `null` hands control back to `preference`. */
+  const set = useCallback((mode: "light" | "dark" | null) => setOverride(mode), []);
 
-  return { resolved, isDark, toggle };
+  return { resolved, isDark, toggle, set };
 }

@@ -122,12 +122,13 @@ function Typewriter({ text, speed = 16 }: { text: string; speed?: number }) {
 
 /** The circle that sits on the vertical rail. */
 function StepCircle({ step }: { step: TimelineStep }) {
+  // `step-node` + data-tone are hooks for the "dots" node style in lib.css.
   const base =
-    "relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-background";
+    "step-node relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-background";
 
   if (step.kind === "reasoning") {
     return (
-      <span className={cn(base, "border-primary/60 text-primary")}>
+      <span data-tone="neutral" className={cn(base, "border-primary/60 text-primary")}>
         <Brain className="h-3.5 w-3.5" />
       </span>
     );
@@ -135,7 +136,7 @@ function StepCircle({ step }: { step: TimelineStep }) {
 
   if (step.kind === "tool_selected") {
     return (
-      <span className={cn(base, "border-dashed border-border text-muted-foreground")}>
+      <span data-tone="neutral" className={cn(base, "border-dashed border-border text-muted-foreground")}>
         <Crosshair className="h-3 w-3" />
       </span>
     );
@@ -143,7 +144,7 @@ function StepCircle({ step }: { step: TimelineStep }) {
 
   if (step.kind === "explaining") {
     return (
-      <span className={cn(base, "border-muted-foreground/40 text-muted-foreground")}>
+      <span data-tone="neutral" className={cn(base, "border-muted-foreground/40 text-muted-foreground")}>
         <MessageCircle className="h-3.5 w-3.5" />
       </span>
     );
@@ -152,6 +153,7 @@ function StepCircle({ step }: { step: TimelineStep }) {
   if (step.kind === "observation") {
     return (
       <span
+        data-tone={step.isError ? "danger" : "neutral"}
         className={cn(
           base,
           "border-dashed",
@@ -165,7 +167,7 @@ function StepCircle({ step }: { step: TimelineStep }) {
 
   if (step.kind === "answer") {
     return (
-      <span className={cn(base, "border-primary bg-primary text-primary-foreground")}>
+      <span data-tone="accent" className={cn(base, "border-primary bg-primary text-primary-foreground")}>
         <Sparkles className="h-3.5 w-3.5" />
       </span>
     );
@@ -174,7 +176,7 @@ function StepCircle({ step }: { step: TimelineStep }) {
   // tool
   if (step.status === "running") {
     return (
-      <span className={cn(base, "border-primary text-primary")}>
+      <span data-tone="accent" className={cn(base, "border-primary text-primary")}>
         {/* pulsing halo marking the current tool call */}
         <span className="absolute inset-0 animate-ping rounded-full border-2 border-primary/60" />
         <CircleDot className="h-3.5 w-3.5" />
@@ -183,13 +185,13 @@ function StepCircle({ step }: { step: TimelineStep }) {
   }
   if (step.status === "error") {
     return (
-      <span className={cn(base, "border-destructive bg-destructive text-destructive-foreground")}>
+      <span data-tone="danger" className={cn(base, "border-destructive bg-destructive text-destructive-foreground")}>
         <TriangleAlert className="h-3.5 w-3.5" />
       </span>
     );
   }
   return (
-    <span className={cn(base, "border-primary bg-primary text-primary-foreground")}>
+    <span data-tone="accent" className={cn(base, "border-primary bg-primary text-primary-foreground")}>
       <Check className="h-3.5 w-3.5" />
     </span>
   );
@@ -299,7 +301,10 @@ export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boo
     >
       {/* connector rail */}
       {!isLast && (
-        <span className="absolute bottom-0 left-[13px] top-7 w-px bg-border" aria-hidden />
+        <span
+          className="absolute bottom-[-10px] left-[13px] top-[14px] w-px bg-border"
+          aria-hidden
+        />
       )}
       <span className="absolute left-0 top-0">
         <StepCircle step={step} />

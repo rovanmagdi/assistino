@@ -11,12 +11,15 @@ import { Sparkles, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Composer, type ComposerOptions } from "./composer";
 import { ThemeToggle } from "./theme-toggle";
+import { SettingsMenu } from "./settings-menu";
 import { AssistantMessage, UserMessage } from "./message";
 import { streamChat, type ChatRequestMessage, type StreamChatOptions } from "../lib/sse";
 import { REASONING_TYPE_SPEED_MS } from "./timeline-node";
 import { cn, newSessionId, nowTime, uid } from "../lib/utils";
 import { useTheme, type ThemePreference } from "../lib/use-theme";
 import { themeTokensToVars, type ThemeTokens } from "../lib/theme-tokens";
+import { useChatSettings } from "../lib/use-chat-settings";
+import { readSetting, writeSetting, type ColorTheme, type NodeStyle } from "../lib/color-themes";
 import type { ChatMessage, TimelineStep } from "../types";
 
 // A ceiling, not a normal-case limit — only kicks in for pathologically long
@@ -69,10 +72,25 @@ export interface AssistinoChatProps {
   title?: string;
   /** Header subtitle. Defaults to "Reasoning · Tools · Observation". */
   subtitle?: string;
-  /** Hide the header strip (title, clear button, theme toggle). */
+  /** Hide the header strip (title, clear button, theme toggle, settings). */
   showHeader?: boolean;
   /** Hide the light/dark switch inside the header. */
   showThemeToggle?: boolean;
+  /**
+   * Show the settings (gear) menu in the header: appearance, brand presets,
+   * custom colors, and the timeline node style. Defaults to `true`.
+   */
+  showSettings?: boolean;
+  /** Brand preset to start from — "default", "pmk", "tendrix", or "talentino AI". */
+  colorTheme?: ColorTheme;
+  /** Timeline rail markers: "icons" (default) or plain "dots". */
+  nodeStyle?: NodeStyle;
+  /**
+   * Remember the user's settings-menu choices in localStorage (keys are
+   * namespaced `assistino-chat:*`). Defaults to `true`; pass `false` for
+   * per-session settings only.
+   */
+  persistSettings?: boolean;
   /** Prompts offered on the empty state. Pass [] for none. */
   suggestions?: string[];
   /** Empty-state heading. Defaults to "What can I help you with?". */
@@ -162,6 +180,10 @@ export function ChatPage({
   subtitle = "Reasoning · Tools · Observation",
   showHeader = true,
   showThemeToggle = true,
+  showSettings = true,
+  colorTheme: defaultColorTheme = "default",
+  nodeStyle: defaultNodeStyle = "icons",
+  persistSettings = true,
   suggestions = DEFAULT_SUGGESTIONS,
   emptyStateTitle = "What can I help you with?",
   placeholder,
@@ -180,7 +202,30 @@ export function ChatPage({
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const { resolved: resolvedTheme, isDark, toggle: toggleTheme } = useTheme(theme, rootRef);
+  // A light/dark choice made in the settings menu outlives the reload.
+  const [storedMode] = useState<"light" | "dark" | null>(() => {
+    const m = persistSettings ? readSetting("mode") : null;
+    return m === "light" || m === "dark" ? m : null;
+  });
+  const {
+    resolved: resolvedTheme,
+    isDark,
+    toggle: toggleTheme,
+    set: setThemeMode,
+  } = useTheme(theme, rootRef, storedMode);
+  const settings = useChatSettings(isDark ? "dark" : "light", {
+    defaultColorTheme,
+    defaultNodeStyle,
+    persist: persistSettings,
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const setDark = useCallback(
+    (dark: boolean) => {
+      setThemeMode(dark ? "dark" : "light");
+      if (persistSettings) writeSetting("mode", dark ? "dark" : "light");
+    },
+    [setThemeMode, persistSettings],
+  );
   // Sent with every turn so the server can keep this conversation's query
   // results (see tools/query_store.py) and chart them on a follow-up instead of
   // re-running the query. Reset by "clear", which starts a new conversation.
@@ -193,10 +238,25 @@ export function ChatPage({
   // Token overrides ride as inline custom properties on the root, so they beat
   // the stylesheet without the host having to out-specify a selector. The dark
   // set is applied by resolved appearance rather than a media query, which is
-  // what lets it follow a `.dark` the host toggles at runtime.
+  // what lets it follow a `.dark` the host toggles at runtime. Choices the
+  // user makes in the settings menu (brand preset, custom colors) layer on top
+  // of the host's tokens — an explicit pick in the UI beats a default.
   const rootStyle = useMemo<CSSProperties>(
-    () => ({ ...themeTokensToVars(tokens, isDark ? darkTokens : undefined), ...style }),
-    [tokens, darkTokens, isDark, style],
+    () => ({
+      ...themeTokensToVars(tokens, isDark ? darkTokens : undefined),
+      ...settings.vars,
+      ...style,
+    }),
+    [tokens, darkTokens, isDark, settings.vars, style],
+  );
+
+  // Values shown by the custom-color pickers. For the "default" preset there
+  // is no literal to show, so read the resolved variable off the root element.
+  // Only while the menu is open — getComputedStyle forces a style flush.
+  const customColorValues = settings.customColorValues((v) =>
+    settingsOpen && rootRef.current
+      ? getComputedStyle(rootRef.current).getPropertyValue(v).trim()
+      : "",
   );
 
   useEffect(() => {
@@ -392,8 +452,9 @@ export function ChatPage({
       data-theme={resolvedTheme ?? undefined}
       style={rootStyle}
       className={cn(
-        "assistino-chat flex min-h-0 flex-col bg-background text-foreground",
+        "assistino-chat relative flex min-h-0 flex-col bg-background text-foreground",
         fullScreen ? "h-screen" : "h-full",
+        settings.nodeStyle === "dots" && "node-style-dots",
         className,
       )}
     >
@@ -416,6 +477,21 @@ export function ChatPage({
             </Button>
           )}
           {showThemeToggle && <ThemeToggle dark={isDark} onToggle={toggleTheme} />}
+          {showSettings && (
+            <SettingsMenu
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+              dark={isDark}
+              onDarkChange={setDark}
+              colorTheme={settings.colorTheme}
+              onColorThemeChange={settings.setColorTheme}
+              customColors={customColorValues}
+              onCustomColorChange={settings.setCustomColor}
+              onResetCustomColors={settings.resetCustomColors}
+              nodeStyle={settings.nodeStyle}
+              onNodeStyleChange={settings.setNodeStyle}
+            />
+          )}
         </header>
       )}
 

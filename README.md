@@ -66,7 +66,10 @@ Every prop is optional.
 | `fetch` | `globalThis.fetch` | Custom fetch (auth refresh, tests) |
 | `sessionId` | generated per mount | Pin the conversation to an id you control |
 | `title` / `subtitle` | `"ReAct Agent"` / `"Reasoning · Tools · Observation"` | Header text |
-| `showHeader` / `showThemeToggle` | `true` | Hide chrome you don't want |
+| `showHeader` / `showThemeToggle` / `showSettings` | `true` | Hide chrome you don't want |
+| `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
+| `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"` |
+| `persistSettings` | `true` | Remember settings-menu choices in localStorage |
 | `suggestions` | three sample prompts | Empty-state prompts; `[]` for none |
 | `emptyStateTitle` | `"What can I help you with?"` | Empty-state heading |
 | `placeholder` | `"Ask the ReAct agent…"` | Composer placeholder (shorthand for `composer.placeholder`) |
@@ -151,6 +154,26 @@ so embedding it cannot restyle the page around it. Dark mode follows, in
 order: an explicit `theme` prop, then a `.dark` ancestor (the usual Tailwind
 convention) when `theme="inherit"` — including when your app toggles that class
 at runtime.
+
+### Settings menu
+
+The gear button in the header opens a panel where the end user can adjust the
+widget without any code on your side:
+
+- **Appearance** — light or dark, overriding the `theme` prop for this user.
+- **Brand** — one of the presets in `COLOR_THEMES`: `"default"` (Talentino
+  blue), `"pmk"`, `"tendrix"`, or `"talentino AI"`. Each carries a light and a
+  dark palette, and some also set radius, fonts, or spacing.
+- **Custom theme** — color pickers for `--primary`, `--secondary`, and
+  `--accent`, stored per preset and per mode, with a reset.
+- **Timeline** — icon circles on the rail, or plain dots.
+
+Choices layer on top of your `tokens` (an explicit pick in the UI beats a host
+default) and are applied as inline variables on the widget root, never on
+`<html>`. They are remembered in localStorage under `assistino-chat:*` keys;
+pass `persistSettings={false}` to keep them per session, or
+`showSettings={false}` to hide the menu and pin `colorTheme` / `nodeStyle`
+yourself.
 
 ### The composer
 

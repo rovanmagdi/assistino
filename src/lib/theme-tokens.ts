@@ -56,6 +56,8 @@ export interface ThemeTokens {
   ring?: string;
   /** Corner rounding, e.g. "0.75rem". Smaller radii cascade from it. */
   radius?: string;
+  /** Base of the spacing scale (--space-xs … --space-xl), default "0.25rem". */
+  spacingUnit?: string;
   /** Body font stack. */
   fontSans?: string;
   /** Heading font stack. */
