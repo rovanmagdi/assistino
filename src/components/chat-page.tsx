@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Sparkles } from "lucide-react";
 import { ChatRoot, type ChatRootProps } from "./chat-root";
 import {
   ChatBody,
@@ -26,11 +27,11 @@ export interface AssistinoChatProps
   subtitle?: string;
   /** Hide the header strip (title, clear button, theme toggle, settings). */
   showHeader?: boolean;
-  /** Hide the light/dark switch inside the header. */
+  /** Show the light/dark switch inside the header. Defaults to `false`. */
   showThemeToggle?: boolean;
   /**
    * Show the settings (gear) menu in the header: appearance, brand presets,
-   * custom colors, and the timeline node style. Defaults to `true`.
+   * custom colors, and the timeline node style. Defaults to `false`.
    */
   showSettings?: boolean;
   /** Placeholder shown in the composer input. Shorthand for `composer.placeholder`. */
@@ -83,8 +84,8 @@ export interface AssistinoChatProps
  * `.Header`, `.Body`, `.Input`).
  */
 export function ChatPage({
-  title,
-  subtitle,
+  title = "ReAct Agent",
+  subtitle = "Reasoning · Tools · Observation",
   showHeader = true,
   showThemeToggle,
   showSettings,
@@ -102,6 +103,11 @@ export function ChatPage({
     <ChatRoot {...root}>
       {showHeader && (
         <ChatHeader
+          icon={
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Sparkles className="h-4 w-4" />
+            </div>
+          }
           title={title}
           subtitle={subtitle}
           showThemeToggle={showThemeToggle}

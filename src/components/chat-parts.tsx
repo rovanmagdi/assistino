@@ -13,32 +13,48 @@ import { useChat } from "./chat-root";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ChatHeaderProps {
-  /** Title text. Defaults to "ReAct Agent". */
+  /**
+   * The header's content — whatever you like, laid out in the space before
+   * the built-in buttons:
+   *
+   * ```tsx
+   * <ChatHeader>
+   *   <span className="text-lg font-bold">Welcome to Tendrix AI Chat</span>
+   * </ChatHeader>
+   * ```
+   *
+   * Nothing renders there by default. The `icon`, `title`, and `subtitle`
+   * props are a shortcut for the badge + two-line layout; `children` wins
+   * when both are given.
+   */
+  children?: ReactNode;
+  /** Title text for the two-line layout. No default. */
   title?: ReactNode;
-  /** Subtitle under the title. Pass `null` for none. */
+  /** Subtitle under the title. No default. */
   subtitle?: ReactNode;
-  /** Replace the sparkle badge. Pass `null` for none. */
+  /** Badge before the title. No default. */
   icon?: ReactNode;
+  /** Extra controls rendered beside the built-in buttons. */
+  actions?: ReactNode;
   /** Show the Clear button once there are messages. Defaults to `true`. */
   showClear?: boolean;
-  /** Show the light/dark switch. Defaults to `true`. */
+  /** Show the light/dark switch. Defaults to `false`. */
   showThemeToggle?: boolean;
-  /** Show the settings (gear) menu. Defaults to `true`. */
+  /** Show the settings (gear) menu. Defaults to `false`. */
   showSettings?: boolean;
-  /** Extra controls rendered before the built-in buttons. */
-  children?: ReactNode;
   className?: string;
 }
 
 /** Title strip with the clear, theme, and settings controls. */
 export function ChatHeader({
-  title = "ReAct Agent",
-  subtitle = "Reasoning · Tools · Observation",
-  icon,
-  showClear = true,
-  showThemeToggle = true,
-  showSettings = true,
   children,
+  title,
+  subtitle,
+  icon,
+  actions,
+  showClear = true,
+  showThemeToggle = false,
+  showSettings = false,
   className,
 }: ChatHeaderProps) {
   const {
@@ -53,22 +69,27 @@ export function ChatHeader({
     customColorValues,
   } = useChat();
 
+  const content =
+    children !== undefined ? (
+      children
+    ) : (
+      <>
+        {icon}
+        {(title || subtitle) && (
+          <div className="min-w-0">
+            {title && <h1 className="text-sm font-semibold leading-none">{title}</h1>}
+            {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
+        )}
+      </>
+    );
+
   return (
     <header
       className={cn("flex items-center gap-3 border-b border-border px-4 py-3", className)}
     >
-      {icon === undefined ? (
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="h-4 w-4" />
-        </div>
-      ) : (
-        icon
-      )}
-      <div className="min-w-0 flex-1">
-        <h1 className="text-sm font-semibold leading-none">{title}</h1>
-        {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
-      </div>
-      {children}
+      <div className="flex min-w-0 flex-1 items-center gap-3">{content}</div>
+      {actions}
       {showClear && !isEmpty && (
         <Button size="sm" variant="ghost" onClick={clear}>
           <Trash2 className="h-4 w-4" />

@@ -66,7 +66,8 @@ Every prop is optional.
 | `fetch` | `globalThis.fetch` | Custom fetch (auth refresh, tests) |
 | `sessionId` | generated per mount | Pin the conversation to an id you control |
 | `title` / `subtitle` | `"ReAct Agent"` / `"Reasoning · Tools · Observation"` | Header text |
-| `showHeader` / `showThemeToggle` / `showSettings` | `true` | Hide chrome you don't want |
+| `showHeader` | `true` | Hide the header strip |
+| `showThemeToggle` / `showSettings` | `false` | Opt in to the light/dark switch and the settings (gear) menu |
 | `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
 | `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"` |
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
@@ -160,7 +161,8 @@ at runtime.
 
 ### Settings menu
 
-The gear button in the header opens a panel where the end user can adjust the
+Opt in with `showSettings` (on `<AssistinoChat />` or `<ChatHeader />`). The
+gear button in the header then opens a panel where the end user can adjust the
 widget without any code on your side:
 
 - **Appearance** — light or dark, overriding the `theme` prop for this user.
@@ -242,8 +244,8 @@ places in your layout — a sidebar, a fixed footer, your own toolbar:
 import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agent-chat";
 
 <ChatRoot apiBaseUrl="https://engine.example.com" theme="system">
-  <ChatHeader title="Support" subtitle={null}>
-    <MyExportButton />           {/* extra controls beside the built-in ones */}
+  <ChatHeader actions={<MyExportButton />}>   {/* extra controls beside the built-in ones */}
+    <span className="text-lg font-bold">Welcome to Tendrix AI Chat</span>
   </ChatHeader>
   <ChatBody suggestions={["Show open roles"]} />
   <ChatInput placeholder="Ask anything…" hint={false} />
@@ -256,7 +258,7 @@ The same parts hang off the widget as `AssistinoChat.Root`, `.Header`,
 | Part | Owns | Props |
 | --- | --- | --- |
 | `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | everything from the props table above except header/body/input options |
-| `ChatHeader` | title strip, Clear, theme toggle, settings menu | `title`, `subtitle`, `icon`, `showClear`, `showThemeToggle`, `showSettings`, `children` |
+| `ChatHeader` | title strip, Clear, theme toggle, settings menu | `children` (your content; nothing by default), or `icon` / `title` / `subtitle` for the two-line layout; `actions`, `showClear`, `showThemeToggle`, `showSettings` |
 | `ChatBody` | scrolling transcript and the empty state | `suggestions`, `emptyStateTitle`, `emptyStateDescription`, `icon`, `classNames` (`title`, `description`, `suggestion`, …), `renderEmptyState` |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
 
