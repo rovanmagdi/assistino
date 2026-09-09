@@ -112,9 +112,38 @@ export interface ChatBodyProps {
   emptyStateTitle?: ReactNode;
   /** Line under the empty-state heading. Pass `null` for none. */
   emptyStateDescription?: ReactNode;
+  /**
+   * Replace the sparkle badge above the empty-state heading — any node, e.g.
+   * `<img src={logo} />` or a lucide icon. Pass `null` for none.
+   */
+  icon?: ReactNode;
   /** Replace the whole empty state. Gets `send` so custom prompts can fire. */
   renderEmptyState?: (api: { send: (text: string) => void }) => ReactNode;
+  /**
+   * Restyle pieces of the empty state. Classes are merged onto the defaults
+   * (conflicting Tailwind utilities are resolved in your favor):
+   *
+   * ```tsx
+   * <ChatBody classNames={{ title: "text-2xl text-primary", description: "hidden" }} />
+   * ```
+   */
+  classNames?: ChatBodyClassNames;
   className?: string;
+}
+
+export interface ChatBodyClassNames {
+  /** The empty-state container (a flex column). */
+  emptyState?: string;
+  /** The heading. */
+  title?: string;
+  /** The line under the heading. */
+  description?: string;
+  /** The list wrapping the suggestion buttons. */
+  suggestions?: string;
+  /** Each suggestion button. */
+  suggestion?: string;
+  /** The transcript container once there are messages. */
+  transcript?: string;
 }
 
 /** The scrolling transcript, or the empty state before the first message. */
@@ -122,7 +151,9 @@ export function ChatBody({
   suggestions = DEFAULT_SUGGESTIONS,
   emptyStateTitle = "What can I help you with?",
   emptyStateDescription = "Watch the agent reason, call tools, and observe results in real time.",
+  icon,
   renderEmptyState,
+  classNames,
   className,
 }: ChatBodyProps) {
   const { messages, isEmpty, send } = useChat();
@@ -138,24 +169,35 @@ export function ChatBody({
         renderEmptyState ? (
           renderEmptyState({ send })
         ) : (
-          <div className="flex h-full w-full flex-col gap-6 px-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-              <Sparkles className="h-7 w-7" />
-            </div>
+          <div className={cn("flex h-full w-full flex-col gap-6 px-4", classNames?.emptyState)}>
+            {icon === undefined ? (
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                <Sparkles className="h-7 w-7" />
+              </div>
+            ) : (
+              icon
+            )}
             <div>
-              <h2 className="font-heading text-xl font-semibold">{emptyStateTitle}</h2>
+              <h2 className={cn("font-heading text-xl font-semibold", classNames?.title)}>
+                {emptyStateTitle}
+              </h2>
               {emptyStateDescription && (
-                <p className="mt-1 text-sm text-muted-foreground">{emptyStateDescription}</p>
+                <p className={cn("mt-1 text-sm text-muted-foreground", classNames?.description)}>
+                  {emptyStateDescription}
+                </p>
               )}
             </div>
             {suggestions.length > 0 && (
-              <div className="flex w-full flex-col gap-2">
+              <div className={cn("flex w-full flex-col gap-2", classNames?.suggestions)}>
                 {suggestions.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => send(s)}
-                    className="rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                    className={cn(
+                      "rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary",
+                      classNames?.suggestion,
+                    )}
                   >
                     {s}
                   </button>
@@ -165,7 +207,7 @@ export function ChatBody({
           </div>
         )
       ) : (
-        <div className="w-full space-y-6 px-4 py-6">
+        <div className={cn("w-full space-y-6 px-4 py-6", classNames?.transcript)}>
           {messages.map((m) =>
             m.role === "user" ? (
               <UserMessage key={m.id} message={m} />

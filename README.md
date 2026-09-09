@@ -72,6 +72,9 @@ Every prop is optional.
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
 | `suggestions` | three sample prompts | Empty-state prompts; `[]` for none |
 | `emptyStateTitle` | `"What can I help you with?"` | Empty-state heading |
+| `emptyStateDescription` | one-line hint | Text under the empty-state heading; `null` for none |
+| `emptyStateIcon` | sparkle badge | Node shown above the empty-state heading; `null` for none |
+| `bodyClassNames` | — | Restyle the empty state: `{ title, description, suggestion, suggestions, emptyState, transcript }` |
 | `placeholder` | `"Ask the ReAct agent…"` | Composer placeholder (shorthand for `composer.placeholder`) |
 | `composer` | — | Restyle/reconfigure the input area — see [The composer](#the-composer) |
 | `renderComposer` | — | Replace the input area with your own |
@@ -254,7 +257,7 @@ The same parts hang off the widget as `AssistinoChat.Root`, `.Header`,
 | --- | --- | --- |
 | `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | everything from the props table above except header/body/input options |
 | `ChatHeader` | title strip, Clear, theme toggle, settings menu | `title`, `subtitle`, `icon`, `showClear`, `showThemeToggle`, `showSettings`, `children` |
-| `ChatBody` | scrolling transcript and the empty state | `suggestions`, `emptyStateTitle`, `emptyStateDescription`, `renderEmptyState` |
+| `ChatBody` | scrolling transcript and the empty state | `suggestions`, `emptyStateTitle`, `emptyStateDescription`, `icon`, `classNames` (`title`, `description`, `suggestion`, …), `renderEmptyState` |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
 
 Anything you render inside `ChatRoot` can call `useChat()` for the transcript

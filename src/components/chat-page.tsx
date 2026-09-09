@@ -4,6 +4,7 @@ import {
   ChatBody,
   ChatHeader,
   ChatInput,
+  type ChatBodyClassNames,
   type ChatBodyProps,
   type ComposerRenderApi,
 } from "./chat-parts";
@@ -14,7 +15,11 @@ export type { ComposerRenderApi } from "./chat-parts";
 /** Props of the packaged widget — every one of them optional. */
 export interface AssistinoChatProps
   extends Omit<ChatRootProps, "children">,
-    Pick<ChatBodyProps, "suggestions" | "emptyStateTitle"> {
+    Pick<ChatBodyProps, "suggestions" | "emptyStateTitle" | "emptyStateDescription"> {
+  /** Restyle the empty state and transcript — see {@link ChatBodyClassNames}. */
+  bodyClassNames?: ChatBodyClassNames;
+  /** Icon shown above the empty-state heading. Pass `null` for none. */
+  emptyStateIcon?: ReactNode;
   /** Header title. Defaults to "ReAct Agent". */
   title?: string;
   /** Header subtitle. Defaults to "Reasoning · Tools · Observation". */
@@ -85,6 +90,9 @@ export function ChatPage({
   showSettings,
   suggestions,
   emptyStateTitle,
+  emptyStateDescription,
+  emptyStateIcon,
+  bodyClassNames,
   placeholder,
   composer,
   renderComposer,
@@ -100,7 +108,13 @@ export function ChatPage({
           showSettings={showSettings}
         />
       )}
-      <ChatBody suggestions={suggestions} emptyStateTitle={emptyStateTitle} />
+      <ChatBody
+        suggestions={suggestions}
+        emptyStateTitle={emptyStateTitle}
+        emptyStateDescription={emptyStateDescription}
+        icon={emptyStateIcon}
+        classNames={bodyClassNames}
+      />
       <ChatInput
         {...composer}
         placeholder={composer?.placeholder ?? placeholder}

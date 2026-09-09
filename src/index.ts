@@ -19,7 +19,12 @@ export type { AssistinoChatProps, ComposerRenderApi } from "./components/chat-pa
 export { ChatRoot, useChat } from "./components/chat-root";
 export type { ChatRootProps, ChatContextValue } from "./components/chat-root";
 export { ChatHeader, ChatBody, ChatInput, DEFAULT_SUGGESTIONS } from "./components/chat-parts";
-export type { ChatHeaderProps, ChatBodyProps, ChatInputProps } from "./components/chat-parts";
+export type {
+  ChatHeaderProps,
+  ChatBodyProps,
+  ChatBodyClassNames,
+  ChatInputProps,
+} from "./components/chat-parts";
 
 // ── transport: talk to the ReAct backend without the UI ───────────────────────
 export { streamChat, DEFAULT_CHAT_PATH } from "./lib/sse";
