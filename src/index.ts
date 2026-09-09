@@ -15,6 +15,12 @@
 export { AssistinoChat, ChatPage } from "./components/chat-page";
 export type { AssistinoChatProps, ComposerRenderApi } from "./components/chat-page";
 
+// ── the three parts, for laying the widget out yourself ───────────────────────
+export { ChatRoot, useChat } from "./components/chat-root";
+export type { ChatRootProps, ChatContextValue } from "./components/chat-root";
+export { ChatHeader, ChatBody, ChatInput, DEFAULT_SUGGESTIONS } from "./components/chat-parts";
+export type { ChatHeaderProps, ChatBodyProps, ChatInputProps } from "./components/chat-parts";
+
 // ── transport: talk to the ReAct backend without the UI ───────────────────────
 export { streamChat, DEFAULT_CHAT_PATH } from "./lib/sse";
 export type { ChatRequestMessage, StreamChatOptions } from "./lib/sse";

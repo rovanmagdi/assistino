@@ -229,6 +229,45 @@ them, and `onKeyDown` runs before the built-in handler — call
 
 The stock `Composer` is exported too, so a custom shell can still reuse it.
 
+### Composing the parts
+
+`<AssistinoChat />` is the default arrangement of three parts. Use them
+directly when the header, transcript, and input need to live in different
+places in your layout — a sidebar, a fixed footer, your own toolbar:
+
+```tsx
+import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agent-chat";
+
+<ChatRoot apiBaseUrl="https://engine.example.com" theme="system">
+  <ChatHeader title="Support" subtitle={null}>
+    <MyExportButton />           {/* extra controls beside the built-in ones */}
+  </ChatHeader>
+  <ChatBody suggestions={["Show open roles"]} />
+  <ChatInput placeholder="Ask anything…" hint={false} />
+</ChatRoot>
+```
+
+The same parts hang off the widget as `AssistinoChat.Root`, `.Header`,
+`.Body`, and `.Input`.
+
+| Part | Owns | Props |
+| --- | --- | --- |
+| `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | everything from the props table above except header/body/input options |
+| `ChatHeader` | title strip, Clear, theme toggle, settings menu | `title`, `subtitle`, `icon`, `showClear`, `showThemeToggle`, `showSettings`, `children` |
+| `ChatBody` | scrolling transcript and the empty state | `suggestions`, `emptyStateTitle`, `emptyStateDescription`, `renderEmptyState` |
+| `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
+
+Anything you render inside `ChatRoot` can call `useChat()` for the transcript
+and actions (`messages`, `streaming`, `send`, `stop`, `clear`, `isDark`, …),
+so a fully custom part is a few lines:
+
+```tsx
+function TurnCounter() {
+  const { messages } = useChat();
+  return <span>{messages.length} messages</span>;
+}
+```
+
 ### Beyond the widget
 
 The parts are exported too — `streamChat` (the SSE client, no UI),
