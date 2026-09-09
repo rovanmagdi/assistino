@@ -18,7 +18,7 @@ const CUSTOM_COLOR_LABELS: Record<CustomColorKey, string> = {
   "--accent": "Accent",
 };
 
-/** Everything the menu edits. Owned by <AssistinoChat />, see useChatSettings. */
+/** Everything the menu edits. Owned by <ChatRoot />, see useChatSettings. */
 export interface SettingsMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

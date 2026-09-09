@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 
 /**
- * How the input area looks and behaves. Pass it as <AssistinoChat composer={…} />.
+ * How the input area looks and behaves. Pass the fields as props of <ChatInput />.
  *
  * This is the "adjust it" level of customization — restyle the box, swap the
  * hint, drop your own buttons beside the textarea, or reach the raw <textarea>

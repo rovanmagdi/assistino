@@ -6,13 +6,19 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/index.css";
-import { AssistinoChat } from "../src/index";
+import { ChatRoot, ChatHeader, ChatBody, ChatInput, DefaultEmptyState } from "../src/index";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
 
 createRoot(root).render(
   <StrictMode>
-    <AssistinoChat fullScreen theme="system" />
+    <ChatRoot fullScreen theme="system">
+      <ChatHeader title="ReAct Agent" subtitle="Reasoning · Tools · Observation" showSettings />
+      <ChatBody>
+        <DefaultEmptyState />
+      </ChatBody>
+      <ChatInput />
+    </ChatRoot>
   </StrictMode>,
 );

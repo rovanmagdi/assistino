@@ -106,7 +106,7 @@ export function useChatSettings(
   /**
    * What the custom-color pickers should display. A stored custom color wins;
    * otherwise the preset's value; for "default" the resolved CSS variable is
-   * read off the root element at render time by the caller (see chat-page).
+   * read off the root element at render time by the caller (see chat-root).
    */
   const customColorValues = useCallback(
     (resolve: (variable: CustomColorKey) => string): Record<CustomColorKey, string> => {

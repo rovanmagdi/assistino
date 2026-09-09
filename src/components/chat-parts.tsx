@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Trash2 } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Composer, type ComposerOptions } from "./composer";
 import { ThemeToggle } from "./theme-toggle";
@@ -129,8 +129,8 @@ export function ChatHeader({
 export interface ChatBodyProps {
   /**
    * What to show before the first message — a welcome, a logo, your own
-   * prompt buttons. Nothing renders by default. Call `useChat().send` from
-   * inside it to fire a prompt:
+   * prompt buttons, or the ready-made {@link DefaultEmptyState}. Nothing
+   * renders by default. Call `useChat().send` from inside it to fire a prompt:
    *
    * ```tsx
    * <ChatBody>
@@ -179,6 +179,92 @@ export function ChatBody({ children, nodeStyle, className }: ChatBodyProps) {
             ),
           )}
           <div ref={bottomRef} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Default empty state
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const DEFAULT_SUGGESTIONS = [
+  "Search the web for the latest news on AI agents",
+  "Find LinkedIn candidates for a senior backend role",
+  "What HR positions are open in my company?",
+];
+
+/** Class hooks for {@link DefaultEmptyState}. */
+export interface ChatBodyClassNames {
+  /** The empty-state container (a flex column). */
+  emptyState?: string;
+  /** The heading. */
+  title?: string;
+  /** The line under the heading. */
+  description?: string;
+  /** The list wrapping the suggestion buttons. */
+  suggestions?: string;
+  /** Each suggestion button. */
+  suggestion?: string;
+}
+
+/**
+ * A ready-made welcome screen for `<ChatBody />`: icon, heading, blurb, and
+ * suggestion buttons that send their text.
+ *
+ * ```tsx
+ * <ChatBody>
+ *   <DefaultEmptyState suggestions={["Find senior backend candidates"]} />
+ * </ChatBody>
+ * ```
+ */
+export function DefaultEmptyState({
+  suggestions = DEFAULT_SUGGESTIONS,
+  title = "What can I help you with?",
+  description = "Watch the agent reason, call tools, and observe results in real time.",
+  icon,
+  classNames,
+}: {
+  suggestions?: string[];
+  title?: ReactNode;
+  description?: ReactNode;
+  icon?: ReactNode;
+  classNames?: ChatBodyClassNames;
+}) {
+  const { send } = useChat();
+  return (
+    <div className={cn("flex h-full w-full flex-col gap-6 px-4", classNames?.emptyState)}>
+      {icon === undefined ? (
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+          <Sparkles className="h-7 w-7" />
+        </div>
+      ) : (
+        icon
+      )}
+      <div>
+        <h2 className={cn("font-heading text-xl font-semibold", classNames?.title)}>{title}</h2>
+        {description && (
+          <p className={cn("mt-1 text-sm text-muted-foreground", classNames?.description)}>
+            {description}
+          </p>
+        )}
+      </div>
+      {suggestions.length > 0 && (
+        <div className={cn("flex w-full flex-col gap-2", classNames?.suggestions)}>
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => send(s)}
+              className={cn(
+                "rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary",
+                classNames?.suggestion,
+              )}
+            >
+              {s}
+            </button>
+          ))}
         </div>
       )}
     </div>

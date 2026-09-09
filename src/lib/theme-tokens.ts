@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 /**
  * Every color, radius, and font the widget draws with. Pass a partial set to
- * <AssistinoChat tokens={…} /> (and `darkTokens` for the dark variant) to
+ * <ChatRoot tokens={…} /> (and `darkTokens` for the dark variant) to
  * repaint it in your own brand without writing any CSS.
  *
  * Values are plain CSS — "#137FC3", "rgb(19 127 195)", "oklch(0.57 0.14 244)"

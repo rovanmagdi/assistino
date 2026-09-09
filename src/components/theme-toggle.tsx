@@ -4,7 +4,7 @@ import { cn } from "../lib/utils";
 
 /**
  * Light/dark switch for the widget. Fully controlled — the theme lives in
- * <AssistinoChat /> (see lib/use-theme.ts), not on `document`, so a widget
+ * <ChatRoot /> (see lib/use-theme.ts), not on `document`, so a widget
  * embedded in someone else's page never restyles that page.
  *
  * `variant="menu"` renders the two-option picker used inside the settings

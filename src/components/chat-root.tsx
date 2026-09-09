@@ -68,7 +68,7 @@ export function useChat(): ChatContextValue {
   const ctx = useContext(ChatContext);
   if (!ctx) {
     throw new Error(
-      "useChat() must be used inside <ChatRoot /> (or <AssistinoChat.Root />).",
+      "useChat() must be used inside <ChatRoot />.",
     );
   }
   return ctx;
@@ -105,7 +105,7 @@ export interface ChatRootProps {
    * set is fine; anything you leave out keeps its default:
    *
    * ```tsx
-   * <AssistinoChat tokens={{ primary: "#7C3AED", radius: "0.5rem" }} />
+   * <ChatRoot tokens={{ primary: "#7C3AED", radius: "0.5rem" }}>…</ChatRoot>
    * ```
    */
   tokens?: ThemeTokens;

@@ -4,7 +4,7 @@
  * Unlike an app stylesheet this one carries NO Tailwind preflight: a global
  * reset would reach outside the widget and restyle the host application. The
  * reset it needs is scoped to `.assistino-chat` (the root element rendered by
- * <AssistinoChat />) further down, and so are the theme tokens, so embedding
+ * <ChatRoot />) further down, and so are the theme tokens, so embedding
  * the widget cannot leak colors or fonts into the page around it.
  */
 /* Declare layer order up front. Without this, layers are ordered by first

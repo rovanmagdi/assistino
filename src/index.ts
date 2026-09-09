@@ -1,9 +1,10 @@
 /**
  * Public entry point of @assistino/react-agent-chat.
  *
- * The one import most consumers need is <AssistinoChat />; everything below it
- * is exported so the widget can be taken apart and rebuilt — a custom shell
- * around the timeline, a headless client, your own tool renderers.
+ * The widget is <ChatRoot /> with the three parts — <ChatHeader />, <ChatBody />,
+ * <ChatInput /> — laid out inside it. Everything below them is exported so the
+ * widget can be taken apart and rebuilt — a custom shell around the timeline, a
+ * headless client, your own tool renderers.
  *
  * Styles are a separate file (no CSS is imported here, so a consumer bundling
  * for SSR doesn't trip over it):
@@ -11,17 +12,23 @@
  *     import "@assistino/react-agent-chat/style.css";
  */
 
-// ── the widget ────────────────────────────────────────────────────────────────
-export { AssistinoChat, ChatPage } from "./components/chat-page";
-export type { AssistinoChatProps, ComposerRenderApi } from "./components/chat-page";
-
-// ── the three parts, for laying the widget out yourself ───────────────────────
+// ── the widget: the root and its three parts ──────────────────────────────────
 export { ChatRoot, useChat } from "./components/chat-root";
 export type { ChatRootProps, ChatContextValue } from "./components/chat-root";
-export { ChatHeader, ChatBody, ChatInput } from "./components/chat-parts";
-export type { ChatHeaderProps, ChatBodyProps, ChatInputProps } from "./components/chat-parts";
-export { DefaultEmptyState, DEFAULT_SUGGESTIONS } from "./components/chat-page";
-export type { ChatBodyClassNames } from "./components/chat-page";
+export {
+  ChatHeader,
+  ChatBody,
+  ChatInput,
+  DefaultEmptyState,
+  DEFAULT_SUGGESTIONS,
+} from "./components/chat-parts";
+export type {
+  ChatHeaderProps,
+  ChatBodyProps,
+  ChatBodyClassNames,
+  ChatInputProps,
+  ComposerRenderApi,
+} from "./components/chat-parts";
 
 // ── transport: talk to the ReAct backend without the UI ───────────────────────
 export { streamChat, DEFAULT_CHAT_PATH } from "./lib/sse";

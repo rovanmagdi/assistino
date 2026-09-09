@@ -29,18 +29,36 @@ are used, never a second one bundled in.
 
 ## Use
 
+The widget is `ChatRoot` (state, stream, theme) with three parts laid out
+inside it: `ChatHeader`, `ChatBody`, and `ChatInput`.
+
 ```tsx
-import { AssistinoChat } from "@assistino/react-agent-chat";
+import {
+  ChatRoot,
+  ChatHeader,
+  ChatBody,
+  ChatInput,
+  DefaultEmptyState,
+} from "@assistino/react-agent-chat";
 import "@assistino/react-agent-chat/style.css";
 
 export function AgentPage() {
   return (
     <div style={{ height: "100vh" }}>
-      <AssistinoChat apiBaseUrl="https://engine.example.com" />
+      <ChatRoot apiBaseUrl="https://engine.example.com">
+        <ChatHeader title="ReAct Agent" subtitle="Reasoning · Tools · Observation" showSettings />
+        <ChatBody>
+          <DefaultEmptyState />
+        </ChatBody>
+        <ChatInput placeholder="Ask anything…" />
+      </ChatRoot>
     </div>
   );
 }
 ```
+
+Each part is optional and can sit anywhere inside `ChatRoot` — a sidebar, a
+fixed footer, your own toolbar. See [Composing the parts](#composing-the-parts).
 
 The widget fills its parent, so **give the container a height** — it does not
 assume the viewport unless you pass `fullScreen`.
@@ -52,9 +70,10 @@ system fonts:
 import "@assistino/react-agent-chat/fonts.css";
 ```
 
-### Props
+### `ChatRoot` props
 
-Every prop is optional.
+Every prop is optional. Header, empty-state, and input options live on the
+parts — see [Composing the parts](#composing-the-parts).
 
 | Prop | Default | What it does |
 | --- | --- | --- |
@@ -65,20 +84,9 @@ Every prop is optional.
 | `credentials` | — | Pass `"include"` to send cookies cross-origin |
 | `fetch` | `globalThis.fetch` | Custom fetch (auth refresh, tests) |
 | `sessionId` | generated per mount | Pin the conversation to an id you control |
-| `title` / `subtitle` | `"ReAct Agent"` / `"Reasoning · Tools · Observation"` | Header text |
-| `showHeader` | `true` | Hide the header strip |
-| `showThemeToggle` / `showSettings` | `false` | Opt in to the light/dark switch and the settings (gear) menu |
 | `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
 | `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"`. Starting value for the settings menu; `<ChatBody nodeStyle />` pins it |
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
-| `suggestions` | three sample prompts | Empty-state prompts; `[]` for none |
-| `emptyStateTitle` | `"What can I help you with?"` | Empty-state heading |
-| `emptyStateDescription` | one-line hint | Text under the empty-state heading; `null` for none |
-| `emptyStateIcon` | sparkle badge | Node shown above the empty-state heading; `null` for none |
-| `bodyClassNames` | — | Restyle the empty state: `{ title, description, suggestion, suggestions, emptyState, transcript }` |
-| `placeholder` | `"Ask the ReAct agent…"` | Composer placeholder (shorthand for `composer.placeholder`) |
-| `composer` | — | Restyle/reconfigure the input area — see [The composer](#the-composer) |
-| `renderComposer` | — | Replace the input area with your own |
 | `theme` | `"inherit"` | `"inherit"` \| `"system"` \| `"light"` \| `"dark"` |
 | `tokens` | — | Colors, radius, and fonts to override — see [Theming](#theming) |
 | `darkTokens` | — | Overrides applied on top of `tokens` while dark |
@@ -86,6 +94,7 @@ Every prop is optional.
 | `fullScreen` | `false` | Take the viewport (`h-screen`) instead of the parent box |
 | `className` | — | Extra classes on the root element |
 | `onMessagesChange` | — | Called with the full transcript as it changes |
+| `children` | — | The parts: `<ChatHeader />`, `<ChatBody />`, `<ChatInput />`, or your own |
 
 ### Theming
 
@@ -96,10 +105,12 @@ the `tokens` prop winning over CSS, which wins over the defaults.
 **1. The `tokens` prop** — typed, no CSS file needed. A partial set is fine:
 
 ```tsx
-<AssistinoChat
+<ChatRoot
   tokens={{ primary: "#7C3AED", accent: "#F3E8FF", radius: "0.5rem" }}
   darkTokens={{ primary: "#A78BFA" }}
-/>
+>
+  …
+</ChatRoot>
 ```
 
 `darkTokens` layers on top of `tokens` only while the widget is dark, so one
@@ -161,7 +172,7 @@ at runtime.
 
 ### Settings menu
 
-Opt in with `showSettings` (on `<AssistinoChat />` or `<ChatHeader />`). The
+Opt in with `showSettings` on `<ChatHeader />`. The
 gear button in the header then opens a panel where the end user can adjust the
 widget without any code on your side:
 
@@ -184,24 +195,22 @@ yourself.
 
 The input area is customizable at two levels.
 
-**Adjust it** with the `composer` prop — restyle the box, change the behaviour,
-add your own controls beside the textarea:
+**Adjust it** with props on `<ChatInput />` — restyle the box, change the
+behaviour, add your own controls beside the textarea:
 
 ```tsx
-<AssistinoChat
-  composer={{
-    placeholder: "Ask about your pipeline…",
-    hint: false,                          // drop the "Enter to send" line
-    boxClassName: "rounded-md border-2",  // the bordered box
-    textareaClassName: "text-base",       // the <textarea> itself
-    minRows: 2,
-    maxHeight: 320,                       // how far it auto-grows, in px
-    submitOnEnter: false,                 // Enter makes a newline instead
-    autoFocus: true,
-    leading: <AttachButton />,            // inside the box, before the input
-    trailing: <MicButton />,              // between input and send button
-    textareaProps: { maxLength: 2000, name: "prompt" },
-  }}
+<ChatInput
+  placeholder="Ask about your pipeline…"
+  hint={false}                          // drop the "Enter to send" line
+  boxClassName="rounded-md border-2"    // the bordered box
+  textareaClassName="text-base"         // the <textarea> itself
+  minRows={2}
+  maxHeight={320}                       // how far it auto-grows, in px
+  submitOnEnter={false}                 // Enter makes a newline instead
+  autoFocus
+  leading={<AttachButton />}            // inside the box, before the input
+  trailing={<MicButton />}              // between input and send button
+  textareaProps={{ maxLength: 2000, name: "prompt" }}
 />
 ```
 
@@ -221,12 +230,12 @@ add your own controls beside the textarea:
 them, and `onKeyDown` runs before the built-in handler — call
 `preventDefault()` there to take over a key.
 
-**Replace it** with `renderComposer` when you want your own UI entirely. You get
-`send` and `stop`; the transcript above stays as it is:
+**Replace it** with the `render` prop when you want your own UI entirely. You
+get `send` and `stop`; the transcript above stays as it is:
 
 ```tsx
-<AssistinoChat
-  renderComposer={({ send, stop, streaming }) => (
+<ChatInput
+  render={({ send, stop, streaming }) => (
     <MyComposer onSubmit={send} onCancel={stop} busy={streaming} />
   )}
 />
@@ -236,9 +245,8 @@ The stock `Composer` is exported too, so a custom shell can still reuse it.
 
 ### Composing the parts
 
-`<AssistinoChat />` is the default arrangement of three parts. Use them
-directly when the header, transcript, and input need to live in different
-places in your layout — a sidebar, a fixed footer, your own toolbar:
+The three parts can live anywhere inside `ChatRoot` — a sidebar, a fixed
+footer, your own toolbar — and each one is optional:
 
 ```tsx
 import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agent-chat";
@@ -254,14 +262,11 @@ import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agen
 </ChatRoot>
 ```
 
-The same parts hang off the widget as `AssistinoChat.Root`, `.Header`,
-`.Body`, and `.Input`.
-
 | Part | Owns | Props |
 | --- | --- | --- |
-| `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | everything from the props table above except header/body/input options |
+| `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | the [`ChatRoot` props](#chatroot-props) table above |
 | `ChatHeader` | title strip, Clear, theme toggle, settings menu | `children` (your content; nothing by default), or `icon` / `title` / `subtitle` for the two-line layout; `actions`, `showClear`, `showThemeToggle`, `showSettings` |
-| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is the one `<AssistinoChat />` uses, if you want it. `nodeStyle` — pin the timeline markers to `"icons"` or `"dots"` regardless of the settings menu. `className` |
+| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is a ready-made one: `suggestions`, `title`, `description`, `icon`, and `classNames` (`{ emptyState, title, description, suggestions, suggestion }`). `nodeStyle` — pin the timeline markers to `"icons"` or `"dots"` regardless of the settings menu. `className` |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
 
 Anything you render inside `ChatRoot` can call `useChat()` for the transcript
