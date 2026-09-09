@@ -280,17 +280,18 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Timeline rail markers — "dots" style (settings menu → Timeline). Replaces
-   each icon circle with a plain dot tinted by the step's tone.
+   Timeline rail markers — "dots" style (settings menu → Timeline, or
+   <ChatBody nodeStyle="dots" />). The class sits on the transcript element.
+   Replaces each icon circle with a plain dot tinted by the step's tone.
    ───────────────────────────────────────────────────────────────────────── */
-.assistino-chat.node-style-dots .step-node {
+.assistino-chat .node-style-dots .step-node {
   border-color: transparent;
   background-color: transparent;
 }
-.assistino-chat.node-style-dots .step-node svg {
+.assistino-chat .node-style-dots .step-node svg {
   display: none;
 }
-.assistino-chat.node-style-dots .step-node::after {
+.assistino-chat .node-style-dots .step-node::after {
   content: "";
   display: block;
   width: 0.55rem;
@@ -298,10 +299,10 @@
   border-radius: 9999px;
   background: var(--muted-foreground);
 }
-.assistino-chat.node-style-dots .step-node[data-tone="accent"]::after {
+.assistino-chat .node-style-dots .step-node[data-tone="accent"]::after {
   background: var(--primary);
 }
-.assistino-chat.node-style-dots .step-node[data-tone="danger"]::after {
+.assistino-chat .node-style-dots .step-node[data-tone="danger"]::after {
   background: var(--destructive);
 }
 

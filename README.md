@@ -69,7 +69,7 @@ Every prop is optional.
 | `showHeader` | `true` | Hide the header strip |
 | `showThemeToggle` / `showSettings` | `false` | Opt in to the light/dark switch and the settings (gear) menu |
 | `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
-| `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"` |
+| `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"`. Starting value for the settings menu; `<ChatBody nodeStyle />` pins it |
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
 | `suggestions` | three sample prompts | Empty-state prompts; `[]` for none |
 | `emptyStateTitle` | `"What can I help you with?"` | Empty-state heading |
@@ -261,7 +261,7 @@ The same parts hang off the widget as `AssistinoChat.Root`, `.Header`,
 | --- | --- | --- |
 | `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | everything from the props table above except header/body/input options |
 | `ChatHeader` | title strip, Clear, theme toggle, settings menu | `children` (your content; nothing by default), or `icon` / `title` / `subtitle` for the two-line layout; `actions`, `showClear`, `showThemeToggle`, `showSettings` |
-| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is the one `<AssistinoChat />` uses, if you want it |
+| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is the one `<AssistinoChat />` uses, if you want it. `nodeStyle` — pin the timeline markers to `"icons"` or `"dots"` regardless of the settings menu. `className` |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
 
 Anything you render inside `ChatRoot` can call `useChat()` for the transcript

@@ -116,7 +116,10 @@ export interface ChatRootProps {
   darkTokens?: ThemeTokens;
   /** Brand preset to start from — "default", "pmk", "tendrix", or "talentino AI". */
   colorTheme?: ColorTheme;
-  /** Timeline rail markers: "icons" (default) or plain "dots". */
+  /**
+   * Timeline rail markers: "icons" (default) or plain "dots". The starting
+   * value for the settings menu; `<ChatBody nodeStyle />` overrides both.
+   */
   nodeStyle?: NodeStyle;
   /**
    * Remember the user's settings-menu choices in localStorage (keys are
@@ -463,7 +466,6 @@ export function ChatRoot({
         className={cn(
           "assistino-chat relative flex min-h-0 flex-col bg-background text-foreground",
           fullScreen ? "h-screen" : "h-full",
-          settings.nodeStyle === "dots" && "node-style-dots",
           className,
         )}
       >

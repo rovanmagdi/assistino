@@ -6,6 +6,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { SettingsMenu } from "./settings-menu";
 import { AssistantMessage, UserMessage } from "./message";
 import { cn } from "../lib/utils";
+import type { NodeStyle } from "../lib/color-themes";
 import { useChat } from "./chat-root";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,7 +92,12 @@ export function ChatHeader({
       <div className="flex min-w-0 flex-1 items-center gap-3">{content}</div>
       {actions}
       {showClear && !isEmpty && (
-        <Button size="sm" variant="ghost" onClick={clear}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={clear}
+          className="hover:bg-primary/10 hover:text-primary"
+        >
           <Trash2 className="h-4 w-4" />
           Clear
         </Button>
@@ -133,19 +139,34 @@ export interface ChatBodyProps {
    * ```
    */
   children?: ReactNode;
+  /**
+   * Timeline rail markers: `"icons"` or plain `"dots"`. Pins the style for
+   * this transcript, overriding the `nodeStyle` prop on `<ChatRoot />` and
+   * whatever the user picked in the settings menu. Leave it out to follow
+   * those.
+   */
+  nodeStyle?: NodeStyle;
+  className?: string;
 }
 
 /** The scrolling transcript, or `children` before the first message. */
-export function ChatBody({ children }: ChatBodyProps) {
-  const { messages, isEmpty } = useChat();
+export function ChatBody({ children, nodeStyle, className }: ChatBodyProps) {
+  const { messages, isEmpty, settings } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const effectiveNodeStyle = nodeStyle ?? settings.nodeStyle;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
   return (
-    <div className="scrollbar-thin flex-1 overflow-y-auto">
+    <div
+      className={cn(
+        "scrollbar-thin flex-1 overflow-y-auto",
+        effectiveNodeStyle === "dots" && "node-style-dots",
+        className,
+      )}
+    >
       {isEmpty ? (
         children
       ) : (
