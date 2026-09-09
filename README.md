@@ -202,8 +202,10 @@ behaviour, add your own controls beside the textarea:
 <ChatInput
   placeholder="Ask about your pipeline…"
   hint={false}                          // drop the "Enter to send" line
-  boxClassName="rounded-md border-2"    // the bordered box
-  textareaClassName="text-base"         // the <textarea> itself
+  classNames={{
+    box: "rounded-md border-2",         // the bordered box
+    textarea: "text-base",              // the <textarea> itself
+  }}
   minRows={2}
   maxHeight={320}                       // how far it auto-grows, in px
   submitOnEnter={false}                 // Enter makes a newline instead
@@ -217,7 +219,7 @@ behaviour, add your own controls beside the textarea:
 | Option | What it does |
 | --- | --- |
 | `placeholder` | Placeholder text |
-| `className` / `boxClassName` / `textareaClassName` | Classes on the wrapper, the bordered box, the `<textarea>` |
+| `classNames` | `{ root, box, textarea, hint }` — classes on the wrapper, the bordered box, the `<textarea>`, and the hint line |
 | `hint` | The line under the input — your own node, or `false` to remove it |
 | `minRows` / `maxHeight` | Starting height, and how far it auto-grows before scrolling |
 | `autoFocus` | Focus on mount |

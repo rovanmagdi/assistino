@@ -39,7 +39,7 @@ export { AgentTimeline } from "./components/agent-timeline";
 export { TimelineNode, REASONING_TYPE_SPEED_MS } from "./components/timeline-node";
 export { AssistantMessage, UserMessage } from "./components/message";
 export { Composer } from "./components/composer";
-export type { ComposerOptions, ComposerActions } from "./components/composer";
+export type { ComposerOptions, ComposerClassNames, ComposerActions } from "./components/composer";
 export { Markdown } from "./components/markdown";
 export { ThemeToggle } from "./components/theme-toggle";
 export { SettingsMenu } from "./components/settings-menu";

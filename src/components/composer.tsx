@@ -8,18 +8,20 @@ import { cn } from "../lib/utils";
  *
  * This is the "adjust it" level of customization — restyle the box, swap the
  * hint, drop your own buttons beside the textarea, or reach the raw <textarea>
- * through `textareaProps`. To replace the whole thing, use the `renderComposer`
- * prop instead.
+ * through `textareaProps`. To replace the whole thing, use the `render` prop
+ * of <ChatInput /> instead.
  */
 export interface ComposerOptions {
   /** Placeholder text in the input. */
   placeholder?: string;
-  /** Classes on the outer wrapper (controls width and outer spacing). */
-  className?: string;
-  /** Classes on the bordered input box. */
-  boxClassName?: string;
-  /** Classes on the <textarea> itself. */
-  textareaClassName?: string;
+  /**
+   * Class hooks for each layer of the composer — see {@link ComposerClassNames}:
+   *
+   * ```tsx
+   * <ChatInput classNames={{ box: "rounded-md border-2", textarea: "text-base" }} />
+   * ```
+   */
+  classNames?: ComposerClassNames;
   /**
    * The line under the input. Pass your own node, or `false` to remove it.
    * Defaults to "Enter to send · Shift+Enter for a new line".
@@ -53,6 +55,18 @@ export interface ComposerOptions {
   >;
 }
 
+/** Class hooks for the composer's layers, outermost first. */
+export interface ComposerClassNames {
+  /** The outer wrapper (controls width and outer spacing). */
+  root?: string;
+  /** The bordered input box. */
+  box?: string;
+  /** The <textarea> itself. */
+  textarea?: string;
+  /** The hint line under the input. */
+  hint?: string;
+}
+
 /** Handed to `renderActions` so custom buttons can drive the composer. */
 export interface ComposerActions {
   /** Send what is currently typed. No-op while a turn is streaming. */
@@ -72,9 +86,7 @@ export function Composer({
   onStop,
   streaming,
   placeholder = "Ask the ReAct agent…",
-  className,
-  boxClassName,
-  textareaClassName,
+  classNames,
   hint = DEFAULT_HINT,
   minRows = 1,
   maxHeight = 200,
@@ -110,11 +122,11 @@ export function Composer({
   const actions: ComposerActions = { submit, stop: onStop, streaming, value };
 
   return (
-    <div className={cn("w-full px-4 pb-4", className)}>
+    <div className={cn("w-full px-4 pb-4", classNames?.root)}>
       <div
         className={cn(
           "flex items-end gap-2 rounded-2xl border border-input bg-card p-2 shadow-sm transition-colors focus-within:border-ring",
-          boxClassName,
+          classNames?.box,
         )}
       >
         {leading}
@@ -137,7 +149,7 @@ export function Composer({
           style={{ maxHeight, ...textareaProps?.style }}
           className={cn(
             "scrollbar-thin flex-1 resize-none bg-transparent px-2 py-1.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground",
-            textareaClassName,
+            classNames?.textarea,
             textareaProps?.className,
           )}
         />
@@ -160,7 +172,9 @@ export function Composer({
         )}
       </div>
       {hint !== false && (
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">{hint}</p>
+        <p className={cn("mt-2 text-center text-[11px] text-muted-foreground", classNames?.hint)}>
+          {hint}
+        </p>
       )}
     </div>
   );
