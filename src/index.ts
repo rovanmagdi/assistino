@@ -1,18 +1,3 @@
-/**
- * Public entry point of @assistino/react-agent-chat.
- *
- * The widget is <ChatRoot /> with the three parts — <ChatHeader />, <ChatBody />,
- * <ChatInput /> — laid out inside it. Everything below them is exported so the
- * widget can be taken apart and rebuilt — a custom shell around the timeline, a
- * headless client, your own tool renderers.
- *
- * Styles are a separate file (no CSS is imported here, so a consumer bundling
- * for SSR doesn't trip over it):
- *
- *     import "@assistino/react-agent-chat/style.css";
- */
-
-// ── the widget: the root and its three parts ──────────────────────────────────
 export { ChatRoot, useChat } from "./components/chat-root";
 export type { ChatRootProps, ChatContextValue } from "./components/chat-root";
 export {
@@ -30,11 +15,9 @@ export type {
   ComposerRenderApi,
 } from "./components/chat-parts";
 
-// ── transport: talk to the ReAct backend without the UI ───────────────────────
 export { streamChat, DEFAULT_CHAT_PATH } from "./lib/sse";
 export type { ChatRequestMessage, StreamChatOptions } from "./lib/sse";
 
-// ── parts, for building a different shell ─────────────────────────────────────
 export { AgentTimeline } from "./components/agent-timeline";
 export { TimelineNode, REASONING_TYPE_SPEED_MS } from "./components/timeline-node";
 export { AssistantMessage, UserMessage } from "./components/message";
@@ -49,7 +32,6 @@ export { ToolResult } from "./components/tools/tool-result";
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
 export { normalizeResult } from "./lib/tool-results";
 export type {
   ActionAttr,
@@ -67,5 +49,4 @@ export type { ColorTheme, CustomColorKey, Mode, NodeStyle } from "./lib/color-th
 export { useChatSettings } from "./lib/use-chat-settings";
 export type { ChatSettingsOptions } from "./lib/use-chat-settings";
 
-// ── domain types ──────────────────────────────────────────────────────────────
 export type { AgentEvent, ChatMessage, Role, TimelineStep } from "./types";

@@ -1,14 +1,5 @@
 import type { CSSProperties } from "react";
 
-/**
- * Brand presets selectable from the settings menu. Ported from
- * Assistino_Engine/frontend (branch feat/add-new-chat-theme), with one
- * difference: the engine writes these onto `<html>`, while here they ride as
- * inline custom properties on the widget root so an embedded widget never
- * recolors the page around it.
- *
- * "default" is the package's own Talentino-blue palette from styles/lib.css.
- */
 export type ColorTheme = "default" | "pmk" | "tendrix" | "talentino AI";
 export type Mode = "light" | "dark";
 
@@ -167,7 +158,7 @@ export const COLOR_THEMES: Record<Exclude<ColorTheme, "default">, ThemeDefinitio
 };
 
 export const COLOR_THEME_OPTIONS: { value: ColorTheme; label: string; swatch: string }[] = [
-  { value: "default", label: "Default", swatch: "#137FC3" },
+  { value: "default", label: "Default", swatch: "oklch(0.6929 0.1396 166.5513)" },
   { value: "pmk", label: "PMK", swatch: "hsl(221.2 83.2% 53.3%)" },
   { value: "tendrix", label: "Tendrix", swatch: "#ff750e" },
   { value: "talentino AI", label: "Talentino AI", swatch: "#076698" },
@@ -194,11 +185,6 @@ export function presetColor(theme: ColorTheme, mode: Mode, variable: CustomColor
   return COLOR_THEMES[theme][mode]?.[variable] ?? "";
 }
 
-// ── persistence ──────────────────────────────────────────────────────────────
-// Settings survive a reload via localStorage, namespaced so they cannot collide
-// with the host app's own keys. Every access is guarded: storage can be absent
-// (SSR) or throw (private mode, blocked site data).
-
 const PREFIX = "assistino-chat:";
 
 export function readSetting(key: string): string | null {
@@ -215,7 +201,6 @@ export function writeSetting(key: string, value: string | null): void {
     if (value === null) localStorage.removeItem(PREFIX + key);
     else localStorage.setItem(PREFIX + key, value);
   } catch {
-    /* storage unavailable — the setting simply lasts for this session */
   }
 }
 

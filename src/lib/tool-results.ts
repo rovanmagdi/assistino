@@ -1,15 +1,6 @@
-/**
- * tool-results.ts — turn a tool's raw string output (as produced by the Python
- * tools in ../../tools) into a structured shape the rich renderers in
- * components/tools/tool-result.tsx can display.
- *
- * Every branch is defensive: if a payload doesn't parse as expected, we fall
- * back to `{ kind: "text", raw }` so the UI always shows *something*.
- */
 
-// ── public types ──────────────────────────────────────────────────────────────
 
-/** A single LinkedIn profile card (union of scraper / finding / matching fields). */
+/** A single LinkedIn profile card. */
 export interface LinkedInProfile {
   full_name?: string;
   headline?: string;
@@ -21,7 +12,7 @@ export interface LinkedInProfile {
   profile_url?: string;
 }
 
-/** One field of an HR action form (from acceptedAttributes / missingAttributes). */
+/** One field of an HR action form. */
 export interface ActionAttr {
   name: string;
   type?: string;
@@ -33,12 +24,7 @@ export interface ActionAttr {
   value?: unknown;
 }
 
-/**
- * One chart produced by the chart_visualisation tool. The figure itself is NOT
- * in the tool result — it is ~5KB of base64 per chart and would sit in the
- * model's context for the rest of the chat. `file` is fetched from
- * `/api/charts/{file}` by the renderer instead.
- */
+/** One chart from chart_visualisation; `file` is fetched from `/api/charts/{file}`. */
 export interface ChartRef {
   title: string;
   chartType?: string;
@@ -71,8 +57,6 @@ export type NormalizedResult =
   | {
       kind: "chart";
       sql?: string;
-      /** The nl2sql question these rows came from — chart_visualisation plots the
-       *  most recent fetch, so this is how a chart of stale rows is spotted. */
       chartedQuestion?: string;
       error?: string;
       message?: string;
@@ -82,8 +66,6 @@ export type NormalizedResult =
       raw: string;
     }
   | { kind: "text"; raw: string };
-
-// ── entry point ─────────────────────────────────────────────────────────────
 
 export function normalizeResult(tool: string, result: string | null): NormalizedResult {
   const raw = result ?? "";
@@ -108,8 +90,6 @@ export function normalizeResult(tool: string, result: string | null): Normalized
   }
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
 function tryJson<T = unknown>(raw: string): T | null {
   const s = raw.trim();
   if (!s || (s[0] !== "{" && s[0] !== "[")) return null;
@@ -130,8 +110,6 @@ function str(v: unknown): string | undefined {
   return s || undefined;
 }
 
-// ── web_search: free-form text blocks ("Title:/URL:/Snippet:" joined by ---) ──
-
 function parseWebSearch(raw: string): NormalizedResult {
   const sources: { url: string; title: string; snippet: string }[] = [];
   for (const block of raw.split(/\n\n-{3,}\n\n/)) {
@@ -144,8 +122,6 @@ function parseWebSearch(raw: string): NormalizedResult {
   return { kind: "websearch", sources, raw };
 }
 
-// ── assistino_retrieval: JSON array of rows, or text / [Error] ───────────────
-
 function parseRetrieval(raw: string): NormalizedResult {
   if (isError(raw)) {
     return { kind: "retrieval", error: raw.trim(), columns: [], rows: [], totalRows: 0, raw };
@@ -156,25 +132,19 @@ function parseRetrieval(raw: string): NormalizedResult {
     const columns = rows.length ? Object.keys(rows[0]) : [];
     return { kind: "retrieval", columns, rows, totalRows: rows.length, raw };
   }
-  // "Query completed but returned no results." or any other plain text.
   return { kind: "text", raw };
 }
-
-// ── chart_visualisation: {sql, row_count, charts:[{title,chart_type,insight,file}]} ──
 
 function parseChart(raw: string): NormalizedResult {
   const empty = { kind: "chart" as const, rowCount: 0, rejected: 0, charts: [], raw };
   if (isError(raw)) return { ...empty, error: raw.trim() };
 
   const p = tryJson<Record<string, unknown>>(raw);
-  // Not the shape we expect (an older build, a truncated stream) — show the text
-  // rather than an empty chart panel.
   if (!p || typeof p !== "object" || Array.isArray(p)) return { kind: "text", raw };
   if (p.error) return { ...empty, error: str(p.error) };
 
   const charts: ChartRef[] = (Array.isArray(p.charts) ? p.charts : [])
     .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    // A chart with no file cannot be fetched, so it cannot be drawn.
     .filter((c) => !!str(c.file))
     .map((c) => ({
       title: str(c.title) ?? "Untitled chart",
@@ -193,8 +163,6 @@ function parseChart(raw: string): NormalizedResult {
     charts,
   };
 }
-
-// ── assistino_hr_action: HRPipeline dict ─────────────────────────────────────
 
 function toAttr(a: Record<string, unknown>): ActionAttr {
   return {
@@ -236,8 +204,6 @@ function parseAction(raw: string): NormalizedResult {
     raw,
   };
 }
-
-// ── LinkedIn: three tools, one card shape ────────────────────────────────────
 
 function parseLinkedInScraper(raw: string): NormalizedResult {
   if (isError(raw)) return { kind: "linkedin", error: raw.trim(), profiles: [], raw };
@@ -293,7 +259,6 @@ function parseLinkedInMatching(raw: string): NormalizedResult {
     email: str(m.email),
     score: typeof m.score === "number" ? m.score : undefined,
     confidence: str(m.confidence),
-    // Backend field is `match_details` (list of strings); the card renders it as reasons.
     match_reasons: Array.isArray(m.match_reasons)
       ? (m.match_reasons as unknown[]).map(String)
       : Array.isArray(m.match_details)

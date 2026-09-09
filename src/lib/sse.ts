@@ -8,28 +8,19 @@ export interface ChatRequestMessage {
 
 /** Where and how the widget talks to the ReAct backend. */
 export interface StreamChatOptions {
-  /**
-   * Origin of the FastAPI server, e.g. "https://engine.example.com". Leave it
-   * empty (the default) to hit same-origin paths — which is what the demo app
-   * does, since Vite proxies /v1 and /api to :8000 in dev (vite.config.ts).
-   */
+  /** Origin of the backend. Empty (default) means same-origin. */
   baseUrl?: string;
   /** Path of the SSE chat endpoint on that origin. */
   path?: string;
   /** Model id sent in the request body; the server treats it as a label. */
   model?: string;
-  /** Extra request headers — an Authorization bearer, a tenant id, … */
+  /** Extra request headers. */
   headers?: Record<string, string>;
-  /**
-   * Identifies the conversation across turns. `messages` alone is not enough:
-   * the server keeps the query results behind each answer so a follow-up like
-   * "now chart it" can plot the SAME numbers instead of re-running the query,
-   * and it needs a key to file them under.
-   */
+  /** Conversation id; the server files per-conversation query results under it. */
   sessionId?: string;
-  /** Aborts the stream (the widget wires this to its Stop button). */
+  /** Aborts the stream. */
   signal?: AbortSignal;
-  /** Sends cookies on the request — needed when the API is on another origin. */
+  /** Sends cookies cross-origin. */
   credentials?: RequestCredentials;
   /** Swap in a custom fetch (auth refresh, instrumentation, tests). */
   fetch?: typeof fetch;
@@ -37,15 +28,7 @@ export interface StreamChatOptions {
 
 export const DEFAULT_CHAT_PATH = "/v1/chat/completions";
 
-/**
- * Stream a chat turn from the ReAct agent.
- *
- * POSTs the conversation history to the chat-completions SSE endpoint
- * (server.py) and yields normalized {@link AgentEvent}s as they arrive. The
- * server's OpenAI-flavored wire format is translated here into the compact
- * event kinds the UI consumes (thought / tool_start / tool_progress /
- * tool_end / text / error / done).
- */
+/** POST the history to the SSE endpoint and yield normalized {@link AgentEvent}s. */
 export async function* streamChat(
   messages: ChatRequestMessage[],
   options: StreamChatOptions = {},
@@ -90,13 +73,11 @@ export async function* streamChat(
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
-      // SSE frames are separated by a blank line.
       let sep: number;
       while ((sep = buffer.indexOf("\n\n")) !== -1) {
         const frame = buffer.slice(0, sep);
         buffer = buffer.slice(sep + 2);
 
-        // A frame may contain multiple `data:` lines; join their payloads.
         const payload = frame
           .split("\n")
           .filter((l) => l.startsWith("data:"))
@@ -113,7 +94,7 @@ export async function* streamChat(
         try {
           obj = JSON.parse(payload);
         } catch {
-          continue; // ignore non-JSON keep-alives / comments
+          continue;
         }
 
         const evt = mapEvent(obj);
@@ -125,7 +106,6 @@ export async function* streamChat(
   }
 }
 
-/** Translate one server SSE object into a normalized AgentEvent (or null to skip). */
 function mapEvent(obj: Record<string, unknown>): AgentEvent | null {
   const type = obj.type as string | undefined;
 
@@ -158,7 +138,6 @@ function mapEvent(obj: Record<string, unknown>): AgentEvent | null {
       };
   }
 
-  // OpenAI-style chat completion chunk → streamed answer text.
   const choices = obj.choices as
     | Array<{ delta?: { content?: string } }>
     | undefined;

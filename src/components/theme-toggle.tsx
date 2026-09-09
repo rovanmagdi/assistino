@@ -2,14 +2,7 @@ import { Check, Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 
-/**
- * Light/dark switch for the widget. Fully controlled — the theme lives in
- * <ChatRoot /> (see lib/use-theme.ts), not on `document`, so a widget
- * embedded in someone else's page never restyles that page.
- *
- * `variant="menu"` renders the two-option picker used inside the settings
- * menu; the default is the compact icon button in the header.
- */
+/** Light/dark switch. `variant="menu"` is the two-option picker used in settings. */
 export function ThemeToggle({
   dark,
   onToggle,

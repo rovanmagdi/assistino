@@ -18,8 +18,6 @@ export function UserMessage({ message }: { message: ChatMessage }) {
 
 export function AssistantMessage({ message }: { message: ChatMessage }) {
   const steps = message.steps ?? [];
-  // "explaining" also renders the streamed text (see timeline-node.tsx) —
-  // e.g. when a stream errors/aborts before "done" promotes it to "answer".
   const hasTextStep = steps.some((s) => s.kind === "answer" || s.kind === "explaining");
 
   return (
@@ -30,7 +28,6 @@ export function AssistantMessage({ message }: { message: ChatMessage }) {
       <div className="min-w-0 flex-1 pt-0.5">
         <AgentTimeline steps={steps} streaming={!!message.streaming} />
 
-        {/* Fallback: answer arrived without going through the timeline. */}
         {!hasTextStep && !message.streaming && message.content && (
           <Markdown>{message.content}</Markdown>
         )}

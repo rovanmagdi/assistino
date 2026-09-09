@@ -5,8 +5,8 @@ It renders the full ReAct loop (reasoning → tool call → observation → answ
 a **vertical-rail timeline**, with a pulsing circle marking the tool call that is
 currently running and expandable panels showing each tool's arguments and result.
 
-Themed in Talentino blue — the tokens mirror candidate_V1's brand constants
-(`src/constants/theme.js`) — with Inter + Space Grotesk and a full dark mode.
+Themed with the same default palette as Assistino_Engine (emerald primary on
+neutral greys) — with Inter + Space Grotesk and a full dark mode.
 
 ## Install
 
@@ -157,11 +157,10 @@ states); `accent` and `border` are the next two worth setting.
 | `radius` | Corner rounding — the smaller radii derive from it |
 | `fontSans` / `fontHeading` / `fontMono` | Type stacks |
 
-The defaults are Talentino blue, mirroring candidate_V1's brand constants
-(`src/constants/theme.js`): `--primary` is `#137FC3` (lifted to `#2E9BDD` in
-dark so it stays readable), accents come from `#E5F3FF` / `#076698`, and
-`success` / `warning` / `destructive` map to talentinoGreen, a darkened
-talentinoDarkerOrange, and talentinoRed.
+The defaults mirror Assistino_Engine's `index.css`: `--primary` is
+`oklch(0.6929 0.1396 166.55)` (emerald, kept the same in dark), `secondary` /
+`accent` are a pale mint, and the surfaces are neutral greys. `success` and
+`warning` are the widget's own additions, since the engine has no status tokens.
 
 All of it — tokens and the reset — is scoped to the widget's root element
 (`.assistino-chat`), and the stylesheet ships **without** Tailwind preflight,
@@ -177,8 +176,8 @@ gear button in the header then opens a panel where the end user can adjust the
 widget without any code on your side:
 
 - **Appearance** — light or dark, overriding the `theme` prop for this user.
-- **Brand** — one of the presets in `COLOR_THEMES`: `"default"` (Talentino
-  blue), `"pmk"`, `"tendrix"`, or `"talentino AI"`. Each carries a light and a
+- **Brand** — one of the presets in `COLOR_THEMES`: `"default"` (the engine
+  palette), `"pmk"`, `"tendrix"`, or `"talentino AI"`. Each carries a light and a
   dark palette, and some also set radius, fonts, or spacing.
 - **Custom theme** — color pickers for `--primary`, `--secondary`, and
   `--accent`, stored per preset and per mode, with a reset.

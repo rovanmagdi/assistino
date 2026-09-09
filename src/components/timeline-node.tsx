@@ -22,8 +22,7 @@ import { Markdown } from "./markdown";
 import { ToolResult } from "./tools/tool-result";
 import type { TimelineStep } from "../types";
 
-/** ms per character for the reasoning typewriter — also used to time how
- *  long a tool node's reveal should wait so it doesn't pop in mid-sentence. */
+/** ms per character for the reasoning typewriter. */
 export const REASONING_TYPE_SPEED_MS = 4;
 
 const TOOL_ICONS: Record<string, typeof Wrench> = {
@@ -82,8 +81,6 @@ function ProgressLog({
             key={i}
             className={cn(
               "font-mono text-[11px] leading-relaxed",
-              // The panel is dark in both themes, so the brand blue would be
-              // too dark here — hence the brighter variant.
               i === lines.length - 1 && running ? "text-primary-bright" : "text-zinc-500",
             )}
           >
@@ -96,12 +93,7 @@ function ProgressLog({
   );
 }
 
-/**
- * Types a static string out character-by-character. Backend events like
- * `thought` and `tool_start` arrive as one complete string (not token
- * deltas), so this fakes the same streamed feel the final answer gets for
- * free from real `text_delta` chunks.
- */
+/** Types a complete string out character-by-character. */
 function Typewriter({ text, speed = 16 }: { text: string; speed?: number }) {
   const [shown, setShown] = useState("");
 
@@ -122,7 +114,6 @@ function Typewriter({ text, speed = 16 }: { text: string; speed?: number }) {
 
 /** The circle that sits on the vertical rail. */
 function StepCircle({ step }: { step: TimelineStep }) {
-  // `step-node` + data-tone are hooks for the "dots" node style in lib.css.
   const base =
     "step-node relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-background";
 
@@ -173,11 +164,9 @@ function StepCircle({ step }: { step: TimelineStep }) {
     );
   }
 
-  // tool
   if (step.status === "running") {
     return (
       <span data-tone="accent" className={cn(base, "border-primary text-primary")}>
-        {/* pulsing halo marking the current tool call */}
         <span className="absolute inset-0 animate-ping rounded-full border-2 border-primary/60" />
         <CircleDot className="h-3.5 w-3.5" />
       </span>
@@ -266,7 +255,6 @@ function ToolNode({ step }: { step: Extract<TimelineStep, { kind: "tool" }> }) {
                 </div>
               )}
 
-              {/* live progress log (terminal-style) */}
               {(running || step.progress.length > 0) && (
                 <ProgressLog lines={step.progress} running={running} />
               )}
@@ -286,9 +274,6 @@ function ToolNode({ step }: { step: Extract<TimelineStep, { kind: "tool" }> }) {
 }
 
 export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boolean }) {
-  // Data lands in state the instant it arrives (never delayed) — only the
-  // visual reveal of tool nodes waits, via this transition delay, so the
-  // reasoning above it has a moment to be read first.
   const revealDelayMs =
     step.kind === "tool_selected" || step.kind === "tool" ? step.revealDelayMs ?? 0 : 0;
 
@@ -299,7 +284,6 @@ export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boo
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: revealDelayMs / 1000 }}
     >
-      {/* connector rail */}
       {!isLast && (
         <span
           className="absolute bottom-[-10px] left-[13px] top-[14px] w-px bg-border"

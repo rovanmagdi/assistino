@@ -1,9 +1,5 @@
 import { useRef, type ChangeEvent } from "react";
 
-/**
- * A round swatch that opens the browser's native color input. The input is
- * kept in the DOM but invisible so the picker anchors to the swatch.
- */
 export function CustomColorPicker({
   value,
   onChange,
@@ -24,8 +20,6 @@ export function CustomColorPicker({
       <input
         ref={inputRef}
         type="color"
-        // <input type="color"> only accepts #rrggbb; anything else falls back
-        // to white in the dialog while the swatch still shows the real value.
         value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#ffffff"}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
         className="absolute inset-0 h-0 w-0 opacity-0"

@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-/** Short unique id with an optional prefix, e.g. uid("msg") → "msg-4f9a2c-3". */
+/** Short unique id with an optional prefix. */
 let _counter = 0;
 export function uid(prefix = "id"): string {
   _counter += 1;
@@ -14,7 +14,7 @@ export function uid(prefix = "id"): string {
   return `${prefix}-${rand}-${_counter}`;
 }
 
-/** Current wall-clock time as a short "HH:MM:SS" string for progress lines. */
+/** Current time as "HH:MM:SS". */
 export function nowTime(): string {
   return new Date().toLocaleTimeString([], {
     hour: "2-digit",
@@ -23,11 +23,7 @@ export function nowTime(): string {
   });
 }
 
-/**
- * Fresh conversation id. `crypto.randomUUID` is unavailable on http:// origins
- * and older browsers, so fall back to a random string — the server only needs
- * the value to be unique, not a real UUID.
- */
+/** Fresh conversation id; falls back to `uid` where `crypto.randomUUID` is unavailable. */
 export function newSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();

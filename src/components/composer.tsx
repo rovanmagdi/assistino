@@ -3,29 +3,13 @@ import { ArrowUp, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 
-/**
- * How the input area looks and behaves. Pass the fields as props of <ChatInput />.
- *
- * This is the "adjust it" level of customization — restyle the box, swap the
- * hint, drop your own buttons beside the textarea, or reach the raw <textarea>
- * through `textareaProps`. To replace the whole thing, use the `render` prop
- * of <ChatInput /> instead.
- */
+/** How the input area looks and behaves. Passed as props of <ChatInput />. */
 export interface ComposerOptions {
   /** Placeholder text in the input. */
   placeholder?: string;
-  /**
-   * Class hooks for each layer of the composer — see {@link ComposerClassNames}:
-   *
-   * ```tsx
-   * <ChatInput classNames={{ box: "rounded-md border-2", textarea: "text-base" }} />
-   * ```
-   */
+  /** Class hooks for each layer — see {@link ComposerClassNames}. */
   classNames?: ComposerClassNames;
-  /**
-   * The line under the input. Pass your own node, or `false` to remove it.
-   * Defaults to "Enter to send · Shift+Enter for a new line".
-   */
+  /** The line under the input; `false` removes it. */
   hint?: ReactNode | false;
   /** Rows the empty input starts at. Defaults to 1. */
   minRows?: number;
@@ -33,22 +17,15 @@ export interface ComposerOptions {
   maxHeight?: number;
   /** Focus the input on mount. */
   autoFocus?: boolean;
-  /**
-   * Enter submits and Shift+Enter inserts a newline. Set false to require the
-   * send button (Enter then always inserts a newline).
-   */
+  /** Enter submits (Shift+Enter for a newline). Defaults to true. */
   submitOnEnter?: boolean;
-  /** Rendered inside the box, before the textarea — an attach button, say. */
+  /** Rendered inside the box, before the textarea. */
   leading?: ReactNode;
   /** Rendered inside the box, between the textarea and the send button. */
   trailing?: ReactNode;
-  /** Replace the send/stop buttons entirely. Gets the current submit helpers. */
+  /** Replace the send/stop buttons. */
   renderActions?: (api: ComposerActions) => ReactNode;
-  /**
-   * Escape hatch onto the raw <textarea>: `id`, `name`, `maxLength`, `dir`,
-   * `aria-*`, `onFocus`, … Controlled props (value, onChange) are ignored, and
-   * `className` is merged rather than replaced.
-   */
+  /** Raw <textarea> attributes. `className` is merged, `onKeyDown` runs first. */
   textareaProps?: Omit<
     TextareaHTMLAttributes<HTMLTextAreaElement>,
     "value" | "defaultValue" | "onChange" | "ref"
@@ -75,7 +52,7 @@ export interface ComposerActions {
   stop: () => void;
   /** A turn is in flight. */
   streaming: boolean;
-  /** Current input text — empty means there is nothing to send. */
+  /** Current input text. */
   value: string;
 }
 
@@ -104,7 +81,6 @@ export function Composer({
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  // auto-grow
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

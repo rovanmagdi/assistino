@@ -24,22 +24,14 @@ import {
 } from "../lib/color-themes";
 import type { ChatMessage, TimelineStep } from "../types";
 
-// A ceiling, not a normal-case limit — only kicks in for pathologically long
-// thoughts. Set well above what REASONING_TYPE_SPEED_MS needs for a normal
-// 2-3 sentence thought, so the tool node never reveals before the reasoning
-// typewriter (timeline-node.tsx) actually finishes typing it out.
 const MAX_REASONING_REVEAL_DELAY_MS = 3000;
 
-/**
- * Everything a chat part needs from the widget: the transcript, the actions
- * that drive it, and the theme/settings state. Read it with {@link useChat}
- * from any component under <ChatRoot />.
- */
+/** Chat state and actions, read with {@link useChat} from any part under <ChatRoot />. */
 export interface ChatContextValue {
   messages: ChatMessage[];
   /** A turn is in flight. */
   streaming: boolean;
-  /** No messages yet — the empty state shows. */
+  /** No messages yet. */
   isEmpty: boolean;
   /** Send a turn. Ignored while one is already streaming, or if text is blank. */
   send: (text: string) => void;
@@ -76,66 +68,37 @@ export function useChat(): ChatContextValue {
 
 /** Props of the root — transport, session, theme, and where to render. */
 export interface ChatRootProps {
-  /**
-   * Origin of the ReAct backend, e.g. "https://engine.example.com". Omit it to
-   * call same-origin paths, which is what the bundled demo app relies on (Vite
-   * proxies /v1 to :8000 in dev).
-   */
+  /** Origin of the ReAct backend. Omit for same-origin. */
   apiBaseUrl?: string;
   /** Path of the SSE chat endpoint. Defaults to "/v1/chat/completions". */
   apiPath?: string;
   /** Model id sent with each turn; the server treats it as a label. */
   model?: string;
-  /** Extra request headers — an Authorization bearer, a tenant id, … */
+  /** Extra request headers. */
   headers?: Record<string, string>;
   /** Sends cookies cross-origin. Pass "include" when the API is on another host. */
   credentials?: RequestCredentials;
   /** Swap in a custom fetch (auth refresh, instrumentation, tests). */
   fetch?: typeof fetch;
-  /**
-   * Pin the conversation to an id you control — resuming a saved thread, or
-   * tying it to your own user session. Left out, one is generated per mount
-   * and rotated on "Clear".
-   */
+  /** Conversation id. Generated per mount and rotated on Clear when omitted. */
   sessionId?: string;
   /** Light/dark handling — see {@link ThemePreference}. Defaults to "inherit". */
   theme?: ThemePreference;
-  /**
-   * Repaint the widget in your own colors — see {@link ThemeTokens}. A partial
-   * set is fine; anything you leave out keeps its default:
-   *
-   * ```tsx
-   * <ChatRoot tokens={{ primary: "#7C3AED", radius: "0.5rem" }}>…</ChatRoot>
-   * ```
-   */
+  /** Color, radius, and font overrides — see {@link ThemeTokens}. Partial sets are fine. */
   tokens?: ThemeTokens;
-  /**
-   * Overrides applied on top of `tokens` only while the widget is dark. Skip
-   * it and the light values are used in both themes.
-   */
+  /** Overrides applied on top of `tokens` while dark. */
   darkTokens?: ThemeTokens;
   /** Brand preset to start from — "default", "pmk", "tendrix", or "talentino AI". */
   colorTheme?: ColorTheme;
-  /**
-   * Timeline rail markers: "icons" (default) or plain "dots". The starting
-   * value for the settings menu; `<ChatBody nodeStyle />` overrides both.
-   */
+  /** Starting rail marker style: "icons" (default) or "dots". */
   nodeStyle?: NodeStyle;
-  /**
-   * Remember the user's settings-menu choices in localStorage (keys are
-   * namespaced `assistino-chat:*`). Defaults to `true`; pass `false` for
-   * per-session settings only.
-   */
+  /** Remember settings-menu choices in localStorage. Defaults to true. */
   persistSettings?: boolean;
   /** Inline styles on the root element. Merged after the token variables. */
   style?: CSSProperties;
-  /**
-   * Take over the viewport (h-screen) instead of filling the parent box. The
-   * default, `false`, is what you want when embedding: give the container a
-   * height and the widget fills it.
-   */
+  /** Take the viewport (h-screen) instead of filling the parent. */
   fullScreen?: boolean;
-  /** Extra classes on the root element — sizing, borders, rounding. */
+  /** Extra classes on the root element. */
   className?: string;
   /** Called after each completed (or failed) turn, with the full transcript. */
   onMessagesChange?: (messages: ChatMessage[]) => void;
@@ -143,19 +106,7 @@ export interface ChatRootProps {
   children?: ReactNode;
 }
 
-/**
- * The stateful shell: owns the transcript and the SSE stream, resolves the
- * theme and settings, and renders the `.assistino-chat` root element the
- * stylesheet is scoped to. Lay out the parts inside it however you like:
- *
- * ```tsx
- * <ChatRoot apiBaseUrl="https://engine.example.com">
- *   <ChatHeader title="Support" />
- *   <ChatBody />
- *   <ChatInput placeholder="Ask anything…" />
- * </ChatRoot>
- * ```
- */
+/** Owns the transcript, the SSE stream, theme, and settings. Lay the parts out inside it. */
 export function ChatRoot({
   apiBaseUrl,
   apiPath,
@@ -180,7 +131,6 @@ export function ChatRoot({
   const [streaming, setStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  // A light/dark choice made in the settings menu outlives the reload.
   const [storedMode] = useState<"light" | "dark" | null>(() => {
     const m = persistSettings ? readSetting("mode") : null;
     return m === "light" || m === "dark" ? m : null;
@@ -204,21 +154,12 @@ export function ChatRoot({
     },
     [setThemeMode, persistSettings],
   );
-  // Sent with every turn so the server can keep this conversation's query
-  // results (see tools/query_store.py) and chart them on a follow-up instead of
-  // re-running the query. Reset by "clear", which starts a new conversation.
   const sessionIdRef = useRef<string>(sessionId ?? newSessionId());
   if (sessionId && sessionIdRef.current !== sessionId) sessionIdRef.current = sessionId;
 
   const onMessagesChangeRef = useRef(onMessagesChange);
   onMessagesChangeRef.current = onMessagesChange;
 
-  // Token overrides ride as inline custom properties on the root, so they beat
-  // the stylesheet without the host having to out-specify a selector. The dark
-  // set is applied by resolved appearance rather than a media query, which is
-  // what lets it follow a `.dark` the host toggles at runtime. Choices the
-  // user makes in the settings menu (brand preset, custom colors) layer on top
-  // of the host's tokens — an explicit pick in the UI beats a default.
   const rootStyle = useMemo<CSSProperties>(
     () => ({
       ...themeTokensToVars(tokens, isDark ? darkTokens : undefined),
@@ -228,9 +169,6 @@ export function ChatRoot({
     [tokens, darkTokens, isDark, settings.vars, style],
   );
 
-  // Values shown by the custom-color pickers. For the "default" preset there
-  // is no literal to show, so read the resolved variable off the root element.
-  // Only while the menu is open — getComputedStyle forces a style flush.
   const customColorValues = settings.customColorValues((v) =>
     settingsOpen && rootRef.current
       ? getComputedStyle(rootRef.current).getPropertyValue(v).trim()
@@ -250,9 +188,6 @@ export function ChatRoot({
       credentials,
       fetch: fetchImpl,
     }),
-    // `headers` is spread into a fresh object per render by most callers, so
-    // key on its contents rather than its identity to avoid re-creating the
-    // options (and thus handleSend) on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [apiBaseUrl, apiPath, model, JSON.stringify(headers ?? null), credentials, fetchImpl],
   );
@@ -286,10 +221,6 @@ export function ChatRoot({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      // Set on "thought", read on "tool_start" — never awaited, so the
-      // stream keeps being read live; it only decides how long the tool
-      // node's own fade-in transition should be delayed by (timeline-node.tsx),
-      // so events are never held back waiting on it.
       let reasoningRevealDeadline = 0;
 
       try {
@@ -300,7 +231,6 @@ export function ChatRoot({
         });
         for await (const evt of stream) {
           if (evt.kind === "thought") {
-            // 1. Reasoning
             const revealMs = Math.min(
               evt.content.length * REASONING_TYPE_SPEED_MS + 200,
               MAX_REASONING_REVEAL_DELAY_MS,
@@ -314,9 +244,6 @@ export function ChatRoot({
               ],
             }));
           } else if (evt.kind === "tool_start") {
-            // 2. Determine tool, then 3. Tool call (as two separate nodes).
-            // Both land in state immediately; only their visual reveal is
-            // delayed (via revealDelayMs → transition delay in TimelineNode).
             const revealDelayMs = Math.max(0, reasoningRevealDeadline - performance.now());
             patch(assistantId, (m) => ({
               ...m,
@@ -345,7 +272,6 @@ export function ChatRoot({
               ),
             }));
           } else if (evt.kind === "tool_end") {
-            // Mark the tool call done/error, then append 4. Observation as its own node.
             const isError = evt.result.trimStart().startsWith("[Error]");
             const status: "done" | "error" = isError ? "error" : "done";
             patch(assistantId, (m) => ({
@@ -364,9 +290,6 @@ export function ChatRoot({
               ],
             }));
           } else if (evt.kind === "text") {
-            // Streamed as "explaining" by default — we don't yet know if this
-            // turn will call another tool or is the genuine final answer.
-            // Promoted to "answer" on "done" below, once we know it's final.
             patch(assistantId, (m) => {
               const steps = [...(m.steps ?? [])];
               const last = steps[steps.length - 1];
@@ -378,8 +301,6 @@ export function ChatRoot({
               return { ...m, steps, content: m.content + evt.content };
             });
           } else if (evt.kind === "done") {
-            // The loop truly ended here (no further tool call follows) —
-            // promote the trailing "explaining" text to the final answer.
             patch(assistantId, (m) => {
               const steps = [...(m.steps ?? [])];
               const last = steps[steps.length - 1];
@@ -415,12 +336,8 @@ export function ChatRoot({
   const handleClear = useCallback(() => {
     abortRef.current?.abort();
     setMessages([]);
-    // A new conversation gets a new store, so a chart request cannot reach back
-    // to data fetched before the clear. A caller-supplied id is left alone —
-    // it belongs to the host, which decides when the thread is really new.
     if (!sessionId) sessionIdRef.current = newSessionId();
   }, [sessionId]);
-
 
   const isEmpty = messages.length === 0;
 

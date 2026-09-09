@@ -9,25 +9,8 @@ import { cn } from "../lib/utils";
 import type { NodeStyle } from "../lib/color-themes";
 import { useChat } from "./chat-root";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Header
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface ChatHeaderProps {
-  /**
-   * The header's content — whatever you like, laid out in the space before
-   * the built-in buttons:
-   *
-   * ```tsx
-   * <ChatHeader>
-   *   <span className="text-lg font-bold">Welcome to Tendrix AI Chat</span>
-   * </ChatHeader>
-   * ```
-   *
-   * Nothing renders there by default. The `icon`, `title`, and `subtitle`
-   * props are a shortcut for the badge + two-line layout; `children` wins
-   * when both are given.
-   */
+  /** Header content before the built-in buttons. Wins over `icon`/`title`/`subtitle`. */
   children?: ReactNode;
   /** Title text for the two-line layout. No default. */
   title?: ReactNode;
@@ -122,29 +105,10 @@ export function ChatHeader({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Body
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface ChatBodyProps {
-  /**
-   * What to show before the first message — a welcome, a logo, your own
-   * prompt buttons, or the ready-made {@link DefaultEmptyState}. Nothing
-   * renders by default. Call `useChat().send` from inside it to fire a prompt:
-   *
-   * ```tsx
-   * <ChatBody>
-   *   <Welcome />
-   * </ChatBody>
-   * ```
-   */
+  /** Shown before the first message, e.g. {@link DefaultEmptyState}. Nothing by default. */
   children?: ReactNode;
-  /**
-   * Timeline rail markers: `"icons"` or plain `"dots"`. Pins the style for
-   * this transcript, overriding the `nodeStyle` prop on `<ChatRoot />` and
-   * whatever the user picked in the settings menu. Leave it out to follow
-   * those.
-   */
+  /** Pin the rail markers to `"icons"` or `"dots"`, overriding the settings menu. */
   nodeStyle?: NodeStyle;
   className?: string;
 }
@@ -185,10 +149,6 @@ export function ChatBody({ children, nodeStyle, className }: ChatBodyProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Default empty state
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const DEFAULT_SUGGESTIONS = [
   "Search the web for the latest news on AI agents",
   "Find LinkedIn candidates for a senior backend role",
@@ -209,16 +169,7 @@ export interface ChatBodyClassNames {
   suggestion?: string;
 }
 
-/**
- * A ready-made welcome screen for `<ChatBody />`: icon, heading, blurb, and
- * suggestion buttons that send their text.
- *
- * ```tsx
- * <ChatBody>
- *   <DefaultEmptyState suggestions={["Find senior backend candidates"]} />
- * </ChatBody>
- * ```
- */
+/** Ready-made welcome screen for `<ChatBody />` with suggestion buttons that send their text. */
 export function DefaultEmptyState({
   suggestions = DEFAULT_SUGGESTIONS,
   title = "What can I help you with?",
@@ -271,10 +222,6 @@ export function DefaultEmptyState({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Input
-// ─────────────────────────────────────────────────────────────────────────────
-
 /** Handed to `render` so a custom input can drive the conversation. */
 export interface ComposerRenderApi {
   /** Send a turn. Ignored while one is already streaming, or if text is blank. */
@@ -286,10 +233,7 @@ export interface ComposerRenderApi {
 }
 
 export interface ChatInputProps extends ComposerOptions {
-  /**
-   * Replace the input area outright. You render whatever UI you like and call
-   * `send` / `stop` from it.
-   */
+  /** Replace the input area entirely; call `send` / `stop` from your own UI. */
   render?: (api: ComposerRenderApi) => ReactNode;
 }
 

@@ -48,8 +48,6 @@ export function useChatSettings(
     return stored === "dots" || stored === "icons" ? stored : defaultNodeStyle;
   });
 
-  // Custom colors are per preset and per mode, like the engine: recoloring the
-  // dark PMK primary leaves light PMK and every other preset untouched.
   const [custom, setCustom] = useState<Record<string, CustomColors>>(() => {
     if (!persist) return {};
     const out: Record<string, CustomColors> = {};
@@ -97,17 +95,11 @@ export function useChatSettings(
     for (const v of CUSTOMIZABLE_VARS) remember(customColorKey(colorTheme, mode, v), null);
   }, [bucket, colorTheme, mode, remember]);
 
-  /** Inline variables for the widget root: preset, then the user's own colors. */
   const vars = useMemo<CSSProperties>(
     () => ({ ...colorThemeVars(colorTheme, mode), ...customForCurrent }) as CSSProperties,
     [colorTheme, mode, customForCurrent],
   );
 
-  /**
-   * What the custom-color pickers should display. A stored custom color wins;
-   * otherwise the preset's value; for "default" the resolved CSS variable is
-   * read off the root element at render time by the caller (see chat-root).
-   */
   const customColorValues = useCallback(
     (resolve: (variable: CustomColorKey) => string): Record<CustomColorKey, string> => {
       const out = {} as Record<CustomColorKey, string>;

@@ -28,40 +28,42 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *):not(:where([data-theme="light"], [data-theme="light"] *)));
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Theme tokens — Talentino blue, mirroring candidate_V1's brand constants
-   (src/constants/theme.js). Scoped to the widget root so the host page keeps
-   its own --background, --primary, … untouched; override any of them from the
-   host by re-declaring them on `.assistino-chat`.
+   Theme tokens — the same default palette as Assistino_Engine
+   (frontend/src/index.css): emerald primary on neutral greys. Scoped to the
+   widget root so the host page keeps its own --background, --primary, …
+   untouched; override any of them from the host by re-declaring them on
+   `.assistino-chat`.
    ───────────────────────────────────────────────────────────────────────── */
 .assistino-chat {
   --duration-fast: 150ms;
   --duration-normal: 200ms;
   --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
 
-  --background: oklch(1.0000 0 0);                  /* #FFFFFF */
-  --foreground: oklch(0.2621 0.0095 248.19);        /* #212529 gray100 */
-  --card: oklch(1.0000 0 0);                        /* #FFFFFF */
-  --card-foreground: oklch(0.2621 0.0095 248.19);   /* #212529 */
-  --popover: oklch(1.0000 0 0);                     /* #FFFFFF */
-  --popover-foreground: oklch(0.2621 0.0095 248.19);/* #212529 */
-  --primary: oklch(0.5750 0.1367 244.25);           /* #137FC3 talentinoBlue */
-  --primary-foreground: oklch(1.0000 0 0);          /* #FFFFFF */
-  --secondary: oklch(0.9573 0.0220 243.80);         /* #E5F3FF talentinoLightBlueBackground */
-  --secondary-foreground: oklch(0.4876 0.1109 240.83); /* #076698 talentinoSpecialBlue */
-  --muted: oklch(0.9585 0.0076 241.66);             /* #EDF2F6 */
-  --muted-foreground: oklch(0.5510 0.0234 264.36);  /* #6B7280 talentinoSecondaryGray */
-  --accent: oklch(0.9573 0.0220 243.80);            /* #E5F3FF */
-  --accent-foreground: oklch(0.4876 0.1109 240.83); /* #076698 */
-  --destructive: oklch(0.5097 0.1443 25.68);        /* #A93C38 talentinoRed */
-  --destructive-foreground: oklch(1.0000 0 0);      /* #FFFFFF */
-  --success: oklch(0.5474 0.1256 157.61);           /* #0D8653 talentinoGreen */
-  --warning: oklch(0.5490 0.1117 70.22);            /* #9A6414, talentinoDarkerOrange darkened for AA */
-  --border: oklch(0.9274 0.0111 243.66);            /* #E1E8EE */
-  --input: oklch(0.8476 0.0139 226.59);             /* #C4CFD4 talentinoDarkerWhiteBlue */
-  --ring: oklch(0.5750 0.1367 244.25);              /* #137FC3 */
-  /* Blue for the always-dark surfaces (the tool progress log), where the
-     brand blue itself is too dark to read. Same value in both themes. */
-  --primary-bright: oklch(0.7225 0.1218 237.21);    /* #4FB0E8 */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2686 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1281 0.0179 169.2764);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1281 0.0179 169.2764);
+  --primary: oklch(0.6929 0.1396 166.5513);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9596 0.0275 167.8295);
+  --secondary-foreground: oklch(0.2868 0.0649 159.9823);
+  --muted: oklch(0.9702 0 0);
+  --muted-foreground: oklch(0.5486 0 0);
+  --accent: oklch(0.9596 0.0275 167.8295);
+  --accent-foreground: oklch(0.2868 0.0649 159.9823);
+  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9208 0.0101 164.8536);
+  --input: oklch(0.9208 0.0101 164.8536);
+  --ring: oklch(0.6929 0.1396 166.5513);
+  /* The engine has no dedicated status tokens; these are the widget's own. */
+  --success: oklch(0.5474 0.1256 157.61);           /* #0D8653 */
+  --warning: oklch(0.5490 0.1117 70.22);            /* #9A6414 */
+  /* Primary for the always-dark surfaces (the tool progress log), lifted so
+     it reads on a dark background. Same value in both themes. */
+  --primary-bright: oklch(0.80 0.14 166.55);
   --radius: 1.2rem;
 
   /* Spacing scale — brand presets can tighten or loosen it via --spacing-unit. */
@@ -81,31 +83,30 @@
  * Dark applies either because the host app toggles `.dark` (the widget is set
  * to inherit) or because `theme` resolved to dark. The :not() keeps an
  * explicitly light widget light even inside a dark host, and saves repeating
- * the whole light set as a third block.
+ * the whole light set as a third block. Like the engine, --primary and --ring
+ * keep their light values.
  */
 .dark .assistino-chat:not([data-theme="light"]),
 .assistino-chat[data-theme="dark"] {
-  --background: oklch(0.2017 0.0126 248.45);        /* #12171C */
-  --foreground: oklch(0.9687 0.0051 247.88);        /* #F2F5F8 */
-  --card: oklch(0.2364 0.0162 252.45);              /* #191F26 */
-  --card-foreground: oklch(0.9687 0.0051 247.88);   /* #F2F5F8 */
-  --popover: oklch(0.2364 0.0162 252.45);           /* #191F26 */
-  --popover-foreground: oklch(0.9687 0.0051 247.88);/* #F2F5F8 */
-  --primary: oklch(0.6596 0.1365 240.80);           /* #2E9BDD — talentinoBlue lifted for dark */
-  --primary-foreground: oklch(0.2314 0.0415 235.81);/* #06202E */
-  --secondary: oklch(0.2849 0.0185 248.48);         /* #232B33 */
-  --secondary-foreground: oklch(0.9687 0.0051 247.88);
-  --muted: oklch(0.2849 0.0185 248.48);             /* #232B33 */
-  --muted-foreground: oklch(0.7449 0.0208 245.72);  /* #A2AEB9 */
-  --accent: oklch(0.2849 0.0185 248.48);            /* #232B33 */
-  --accent-foreground: oklch(0.9687 0.0051 247.88);
-  --destructive: oklch(0.7014 0.1554 24.65);        /* #F0736D */
-  --destructive-foreground: oklch(0.2040 0.0507 26.33); /* #2A0C0A */
-  --success: oklch(0.6736 0.1450 161.27);           /* #17B179 success */
-  --warning: oklch(0.7511 0.1465 70.53);            /* #E89C30 talentinoOrange */
-  --border: oklch(0.3352 0.0209 245.64);            /* #2E3841 */
-  --input: oklch(0.3352 0.0209 245.64);             /* #2E3841 */
-  --ring: oklch(0.6596 0.1365 240.80);              /* #2E9BDD */
+  --background: oklch(0.24 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.28 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.28 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.33 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.33 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.33 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.6736 0.1450 161.27);           /* #17B179 */
+  --warning: oklch(0.7511 0.1465 70.53);            /* #E89C30 */
+  --border: oklch(0.38 0 0);
+  --input: oklch(0.38 0 0);
 }
 
 @theme inline {

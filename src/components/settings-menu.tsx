@@ -18,7 +18,7 @@ const CUSTOM_COLOR_LABELS: Record<CustomColorKey, string> = {
   "--accent": "Accent",
 };
 
-/** Everything the menu edits. Owned by <ChatRoot />, see useChatSettings. */
+/** Everything the menu edits. */
 export interface SettingsMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,12 +34,7 @@ export interface SettingsMenuProps {
   onNodeStyleChange: (style: NodeStyle) => void;
 }
 
-/**
- * Header gear button plus the settings panel it opens. The panel is rendered
- * inside the widget root (an absolutely positioned overlay) rather than
- * portalled to <body>, so it keeps the widget's tokens and scoped reset and
- * never escapes into the host page.
- */
+/** Header gear button plus the settings panel it opens. */
 export function SettingsMenu({
   open,
   onOpenChange,
@@ -132,7 +127,6 @@ export function SettingsMenu({
             </div>
 
             <div className="space-y-6 p-5">
-              {/* Appearance */}
               <section>
                 <SectionHeading
                   icon={Sun}
@@ -142,7 +136,6 @@ export function SettingsMenu({
                 <ThemeToggle variant="menu" dark={dark} onChange={onDarkChange} />
               </section>
 
-              {/* Brand / custom colors */}
               <section>
                 <div className="flex items-center gap-6 border-b border-border">
                   {tabButton("brand", Palette, "Brand")}
@@ -230,7 +223,6 @@ export function SettingsMenu({
                 )}
               </section>
 
-              {/* Timeline */}
               <section>
                 <SectionHeading
                   icon={Shapes}

@@ -1,19 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from "react";
 
-/**
- * How the widget picks between its light and dark token sets.
- *
- * - "inherit" (default) — follow the host page: dark when the widget sits
- *   inside a `.dark` ancestor, the convention most Tailwind apps use.
- * - "system"            — follow the OS `prefers-color-scheme`.
- * - "light" / "dark"    — pin it, regardless of host or OS.
- */
+/** "inherit" follows a `.dark` ancestor, "system" the OS, "light"/"dark" pin it. */
 export type ThemePreference = "inherit" | "system" | "light" | "dark";
 
 /** Resolved appearance, or null when the widget defers to a `.dark` ancestor. */
 export type ResolvedTheme = "light" | "dark" | null;
 
-// SSR-safe: on the server there is no matchMedia, so assume light.
 function systemPrefersDark(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -22,19 +14,10 @@ function systemPrefersDark(): boolean {
   );
 }
 
-/**
- * Resolve `preference` into the value for the root element's `data-theme`, and
- * hand back a toggle that overrides it for the rest of the session.
- *
- * The override is deliberately component state rather than a class on
- * `<html>`: an embedded widget must not restyle the page hosting it. `rootRef`
- * is only read to answer "am I currently inside a dark app?" when the toggle
- * flips away from "inherit".
- */
+/** Resolve `preference` for the root's `data-theme`, plus a session override. */
 export function useTheme(
   preference: ThemePreference,
   rootRef: RefObject<HTMLElement | null>,
-  /** A remembered user choice (e.g. from the settings menu) to start from. */
   initialOverride: "light" | "dark" | null = null,
 ) {
   const [override, setOverride] = useState<"light" | "dark" | null>(initialOverride);
@@ -50,24 +33,18 @@ export function useTheme(
     return () => mq.removeEventListener("change", onChange);
   }, [preference]);
 
-  // Read the host's theme before paint so the first frame is already correct,
-  // then keep watching: apps toggle `.dark` on <html> (or <body>) at runtime,
-  // and an embedded widget has to follow them when it is set to inherit.
   useLayoutEffect(() => {
     const read = () => setInheritedDark(!!rootRef.current?.parentElement?.closest(".dark"));
     read();
 
     if (preference !== "inherit" || typeof MutationObserver === "undefined") return;
     const observer = new MutationObserver(read);
-    // Only the two elements a theme class realistically lives on — observing
-    // the whole tree for class changes would fire on every render.
     for (const el of [document.documentElement, document.body]) {
       if (el) observer.observe(el, { attributes: true, attributeFilter: ["class"] });
     }
     return () => observer.disconnect();
   }, [rootRef, preference]);
 
-  // An explicit `theme` prop change is the host taking control back.
   useEffect(() => setOverride(null), [preference]);
 
   const resolved: ResolvedTheme =
@@ -82,7 +59,6 @@ export function useTheme(
 
   const isDark = resolved ? resolved === "dark" : inheritedDark;
   const toggle = useCallback(() => setOverride(isDark ? "light" : "dark"), [isDark]);
-  /** Pin light or dark for the session; `null` hands control back to `preference`. */
   const set = useCallback((mode: "light" | "dark" | null) => setOverride(mode), []);
 
   return { resolved, isDark, toggle, set };

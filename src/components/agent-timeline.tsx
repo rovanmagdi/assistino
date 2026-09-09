@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 import { TimelineNode } from "./timeline-node";
 import type { TimelineStep } from "../types";
 
-/** Cycled while we wait for the first event — avoids one static "Reasoning…" label. */
 const WAITING_WORDS = [
   "Thinking",
   "Reasoning",
@@ -47,7 +46,6 @@ export function AgentTimeline({
   steps: TimelineStep[];
   streaming: boolean;
 }) {
-  // Show a rotating placeholder before the first event arrives.
   if (steps.length === 0 && streaming) {
     return (
       <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">

@@ -8,7 +8,7 @@ import {
   normalizeResult,
 } from "../../lib/tool-results";
 
-/** Dispatch a tool's result to the matching rich renderer (by tool name). */
+/** Dispatch a tool's result to the matching renderer by tool name. */
 export function ToolResult({ tool, result }: { tool: string; result: string | null }) {
   const norm = useMemo(() => normalizeResult(tool, result), [tool, result]);
 
@@ -28,7 +28,6 @@ export function ToolResult({ tool, result }: { tool: string; result: string | nu
   }
 }
 
-// ── fallback ──────────────────────────────────────────────────────────────────
 function TextResult({ raw }: { raw: string }) {
   return (
     <pre className="scrollbar-thin max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-muted/40 p-2 font-mono text-[12px] leading-relaxed">
@@ -37,7 +36,6 @@ function TextResult({ raw }: { raw: string }) {
   );
 }
 
-// ── web search → source chips ───────────────────────────────────────────────
 function favicon(url: string): string {
   try {
     const host = new URL(url).hostname;
@@ -72,7 +70,6 @@ function WebSearchResult({ norm }: { norm: Extract<NormalizedResult, { kind: "we
   );
 }
 
-// ── retrieval → SQL + table ───────────────────────────────────────────────────
 function fmtCell(v: unknown): string {
   if (v === null || v === undefined) return "—";
   if (typeof v === "object") return JSON.stringify(v);
@@ -142,16 +139,9 @@ function RetrievalResult({ norm }: { norm: Extract<NormalizedResult, { kind: "re
   );
 }
 
-// ── chart_visualisation → interactive plotly figures ─────────────────────────
-
-/**
- * plotly.js is ~1MB, so it is imported dynamically and only once — the first
- * time a chart is actually shown, rather than on every page load.
- */
 let plotlyPromise: Promise<typeof import("plotly.js-dist-min")> | null = null;
 const loadPlotly = () => (plotlyPromise ??= import("plotly.js-dist-min"));
 
-/** One figure, fetched by filename from /api/charts and drawn into a div. */
 function ChartFigure({ file }: { file: string }) {
   const host = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -168,11 +158,8 @@ function ChartFigure({ file }: { file: string }) {
         ]);
         if (!res.ok) throw new Error(`chart unavailable (HTTP ${res.status})`);
         const fig = await res.json();
-        // The effect can resolve after unmount, or after `file` changed.
         if (cancelled || !host.current) return;
         drawnInto = host.current;
-        // The figure carries its own template inline, so there is no theme to
-        // apply here — it already matches in light and dark.
         await Plotly.newPlot(drawnInto, fig.data ?? [], fig.layout ?? {}, {
           responsive: true,
           displaylogo: false,
@@ -185,9 +172,6 @@ function ChartFigure({ file }: { file: string }) {
 
     return () => {
       cancelled = true;
-      // Plotly registers a window resize listener (and a WebGL context for some
-      // trace types) per plot. Without purge they accumulate every time the
-      // timeline re-renders.
       if (drawnInto) void loadPlotly().then(({ default: P }) => P.purge(drawnInto!));
     };
   }, [file]);
@@ -200,8 +184,6 @@ function ChartFigure({ file }: { file: string }) {
       </div>
     );
   }
-  // min-height reserves the space plotly will fill, so the message above the
-  // chart does not jump once the figure lands.
   return <div ref={host} className="min-h-[320px] w-full" />;
 }
 
@@ -235,9 +217,6 @@ function ChartResult({ norm }: { norm: Extract<NormalizedResult, { kind: "chart"
           {c.insight && (
             <p
               className="mt-1 text-xs leading-relaxed text-muted-foreground"
-              // The insight is written by the charting model as a short HTML
-              // fragment (it uses <b> for emphasis), produced server-side by our
-              // own prompt — not user input.
               dangerouslySetInnerHTML={{ __html: c.insight }}
             />
           )}
@@ -249,9 +228,6 @@ function ChartResult({ norm }: { norm: Extract<NormalizedResult, { kind: "chart"
           No charts were produced{norm.rowCount ? ` from ${norm.rowCount} rows` : ""}.
         </p>
       )}
-
-      {/* Collapsed by default: the SQL is context for a wrong-looking chart, not
-          something to read every time. */}
       {norm.sql && (
         <div>
           <button
@@ -285,10 +261,7 @@ function ChartResult({ norm }: { norm: Extract<NormalizedResult, { kind: "chart"
   );
 }
 
-// ── linkedin → profile cards ─────────────────────────────────────────────────
 function confidenceStyle(c?: string): { color: string; Icon: typeof CheckCircle2 } {
-  // Semantic tokens rather than palette classes, so a host that re-themes the
-  // widget (see styles/lib.css) re-themes these badges with it.
   switch (c) {
     case "very_high":
     case "high":
@@ -373,7 +346,6 @@ function LinkedInResult({ norm }: { norm: Extract<NormalizedResult, { kind: "lin
   );
 }
 
-// ── action wizard → interactive form ─────────────────────────────────────────
 function humanize(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
