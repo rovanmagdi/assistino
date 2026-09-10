@@ -17,6 +17,7 @@ import {
   readSetting,
   writeSetting,
   type ColorTheme,
+  type ColorThemeOverrides,
   type CustomColorKey,
   type NodeStyle,
 } from "../lib/color-themes";
@@ -76,8 +77,13 @@ export interface ChatRootProps {
   sessionId?: string;
   /** Light/dark handling — see {@link ThemePreference}. Defaults to "inherit". */
   theme?: ThemePreference;
-  /** Brand preset to start from — "default", "pmk", "tendrix", or "talentino AI". */
+  /** Brand preset to start from — "default", "assistino", "pmk", "tendrix", or "talentino AI". */
   colorTheme?: ColorTheme;
+  /**
+   * Give a brand its own look: per-brand CSS variables merged over the
+   * built-in presets, e.g. `{ pmk: { light: { "--primary": "#1d4ed8" } } }`.
+   */
+  colorThemes?: ColorThemeOverrides;
   /** Starting rail marker style: "icons" (default) or "dots". */
   nodeStyle?: NodeStyle;
   /** Remember settings-menu choices in localStorage. Defaults to true. */
@@ -100,6 +106,7 @@ export function ChatRoot({
   sessionId,
   theme = "inherit",
   colorTheme: defaultColorTheme = "default",
+  colorThemes,
   nodeStyle: defaultNodeStyle = "icons",
   persistSettings = true,
   fullScreen = false,
@@ -125,6 +132,7 @@ export function ChatRoot({
     defaultColorTheme,
     defaultNodeStyle,
     persist: persistSettings,
+    colorThemes,
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const setDark = useCallback(

@@ -42,8 +42,26 @@ export type {
 export { cn, newSessionId, nowTime, uid } from "./lib/utils";
 export { useTheme } from "./lib/use-theme";
 export type { ThemePreference, ResolvedTheme } from "./lib/use-theme";
-export { COLOR_THEMES, COLOR_THEME_OPTIONS, colorThemeVars } from "./lib/color-themes";
-export type { ColorTheme, CustomColorKey, Mode, NodeStyle } from "./lib/color-themes";
+export {
+  COLOR_THEMES,
+  COLOR_THEME_OPTIONS,
+  BRAND_THEMES,
+  colorThemeOptions,
+  colorThemeVars,
+  mergeColorThemes,
+} from "./lib/color-themes";
+export type {
+  BrandTheme,
+  ColorTheme,
+  ColorThemeMap,
+  ColorThemeOption,
+  ColorThemeOverrides,
+  CssVars,
+  CustomColorKey,
+  Mode,
+  NodeStyle,
+  ThemeDefinition,
+} from "./lib/color-themes";
 export { useChatSettings } from "./lib/use-chat-settings";
 export type { ChatSettingsOptions } from "./lib/use-chat-settings";
 

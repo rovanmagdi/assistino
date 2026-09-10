@@ -82,6 +82,7 @@ parts — see [Composing the parts](#composing-the-parts).
 | `credentials` | — | Pass `"include"` to send cookies cross-origin |
 | `sessionId` | generated per mount | Pin the conversation to an id you control |
 | `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
+| `colorThemes` | — | Per-brand overrides on the built-in presets — see [Per-brand themes](#per-brand-themes) |
 | `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"`. Starting value for the settings menu; `<ChatBody nodeStyle />` pins it |
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
 | `theme` | `"inherit"` | `"inherit"` \| `"system"` \| `"light"` \| `"dark"` |
@@ -156,9 +157,10 @@ gear button in the header then opens a panel where the end user can adjust the
 widget without any code on your side:
 
 - **Appearance** — light or dark, overriding the `theme` prop for this user.
-- **Brand** — one of the presets in `COLOR_THEMES`: `"default"` (the engine
-  palette), `"pmk"`, `"tendrix"`, or `"talentino AI"`. Each carries a light and a
-  dark palette, and some also set radius, fonts, or spacing.
+- **Brand** — `"default"` (no preset; your CSS on `.assistino-chat` applies) or
+  one of the presets in `COLOR_THEMES`: `"assistino"` (the engine palette),
+  `"pmk"`, `"tendrix"`, or `"talentino AI"`. Each carries a light and a dark
+  palette, and some also set radius, fonts, or spacing.
 - **Custom theme** — color pickers for `--primary`, `--secondary`, and
   `--accent`, stored per preset and per mode, with a reset.
 - **Timeline** — icon circles on the rail, or plain dots.
@@ -169,6 +171,31 @@ default) and are applied as inline variables on the widget root, never on
 pass `persistSettings={false}` to keep them per session, or
 `showSettings={false}` to hide the menu and pin `colorTheme` / `nodeStyle`
 yourself.
+
+### Per-brand themes
+
+Each product ships with its own preset, and every preset is fully editable
+from the host. Pass `colorThemes` to give a brand a unique look without
+restating its whole palette — variables you list replace the built-in ones,
+everything else stays:
+
+```tsx
+<ChatRoot
+  colorTheme="pmk"
+  colorThemes={{
+    pmk: { light: { "--primary": "#1d4ed8" }, dark: { "--primary": "#60a5fa" } },
+    tendrix: { base: { "--radius": "0.4rem" } },
+    assistino: { light: { "--accent": "#e0f2ec" } },
+    "talentino AI": { base: { "--font-heading": '"Dubai", sans-serif' } },
+  }}
+>
+```
+
+Each entry is a `ThemeDefinition`: `base` (both modes), `light`, and `dark`, each
+a map of CSS variables. The brand picker's swatch follows the overridden light
+primary, and the end user's **Custom theme** colors still layer on top per
+brand and mode. `mergeColorThemes(overrides)` and `colorThemeOptions(themes)`
+are exported if you render your own picker.
 
 ### The composer
 

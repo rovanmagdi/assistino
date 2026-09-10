@@ -94,6 +94,7 @@ export function ChatHeader({
           onDarkChange={setDark}
           colorTheme={settings.colorTheme}
           onColorThemeChange={settings.setColorTheme}
+          colorThemeOptions={settings.themeOptions}
           customColors={customColorValues}
           onCustomColorChange={settings.setCustomColor}
           onResetCustomColors={settings.resetCustomColors}

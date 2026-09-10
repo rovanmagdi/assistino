@@ -1,14 +1,18 @@
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import {
+  COLOR_THEME_VALUES,
+  colorThemeOptions,
   colorThemeVars,
   customColorKey,
   CUSTOMIZABLE_VARS,
   isColorTheme,
+  mergeColorThemes,
   presetColor,
   readCustomColors,
   readSetting,
   writeSetting,
   type ColorTheme,
+  type ColorThemeOverrides,
   type CustomColorKey,
   type CustomColors,
   type Mode,
@@ -20,6 +24,8 @@ const EMPTY: CustomColors = {};
 export interface ChatSettingsOptions {
   /** Brand preset to start from when nothing is remembered. */
   defaultColorTheme?: ColorTheme;
+  /** Host overrides layered on the built-in brand presets, per brand. */
+  colorThemes?: ColorThemeOverrides;
   /** Rail marker style to start from when nothing is remembered. */
   defaultNodeStyle?: NodeStyle;
   /** Remember choices in localStorage (namespaced `assistino-chat:*`). */
@@ -29,8 +35,16 @@ export interface ChatSettingsOptions {
 /** The user-adjustable settings behind the gear menu, plus the CSS they produce. */
 export function useChatSettings(
   mode: Mode,
-  { defaultColorTheme = "default", defaultNodeStyle = "icons", persist = true }: ChatSettingsOptions,
+  {
+    defaultColorTheme = "default",
+    defaultNodeStyle = "icons",
+    persist = true,
+    colorThemes,
+  }: ChatSettingsOptions,
 ) {
+  const themes = useMemo(() => mergeColorThemes(colorThemes), [colorThemes]);
+  const themeOptions = useMemo(() => colorThemeOptions(themes), [themes]);
+
   const remember = useCallback(
     (key: string, value: string | null) => {
       if (persist) writeSetting(key, value);
@@ -51,7 +65,7 @@ export function useChatSettings(
   const [custom, setCustom] = useState<Record<string, CustomColors>>(() => {
     if (!persist) return {};
     const out: Record<string, CustomColors> = {};
-    for (const t of ["default", "pmk", "tendrix", "talentino AI"] as ColorTheme[]) {
+    for (const t of COLOR_THEME_VALUES) {
       for (const m of ["light", "dark"] as Mode[]) {
         const c = readCustomColors(t, m);
         if (Object.keys(c).length) out[`${t}:${m}`] = c;
@@ -96,24 +110,28 @@ export function useChatSettings(
   }, [bucket, colorTheme, mode, remember]);
 
   const vars = useMemo<CSSProperties>(
-    () => ({ ...colorThemeVars(colorTheme, mode), ...customForCurrent }) as CSSProperties,
-    [colorTheme, mode, customForCurrent],
+    () => ({ ...colorThemeVars(colorTheme, mode, themes), ...customForCurrent }) as CSSProperties,
+    [colorTheme, mode, themes, customForCurrent],
   );
 
   const customColorValues = useCallback(
     (resolve: (variable: CustomColorKey) => string): Record<CustomColorKey, string> => {
       const out = {} as Record<CustomColorKey, string>;
       for (const v of CUSTOMIZABLE_VARS) {
-        out[v] = customForCurrent[v] || presetColor(colorTheme, mode, v) || resolve(v);
+        out[v] = customForCurrent[v] || presetColor(colorTheme, mode, v, themes) || resolve(v);
       }
       return out;
     },
-    [customForCurrent, colorTheme, mode],
+    [customForCurrent, colorTheme, mode, themes],
   );
 
   return {
     colorTheme,
     setColorTheme,
+    /** Built-in presets with the host's overrides applied. */
+    themes,
+    /** Menu entries (label + swatch) for the brand picker. */
+    themeOptions,
     nodeStyle,
     setNodeStyle,
     setCustomColor,

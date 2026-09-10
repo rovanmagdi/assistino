@@ -8,6 +8,7 @@ import {
   COLOR_THEME_OPTIONS,
   CUSTOMIZABLE_VARS,
   type ColorTheme,
+  type ColorThemeOption,
   type CustomColorKey,
   type NodeStyle,
 } from "../lib/color-themes";
@@ -26,6 +27,8 @@ export interface SettingsMenuProps {
   onDarkChange: (dark: boolean) => void;
   colorTheme: ColorTheme;
   onColorThemeChange: (theme: ColorTheme) => void;
+  /** Brand entries to list; defaults to the built-in presets. */
+  colorThemeOptions?: ColorThemeOption[];
   /** Current effective values of the three customizable colors. */
   customColors: Record<CustomColorKey, string>;
   onCustomColorChange: (variable: CustomColorKey, color: string) => void;
@@ -42,6 +45,7 @@ export function SettingsMenu({
   onDarkChange,
   colorTheme,
   onColorThemeChange,
+  colorThemeOptions = COLOR_THEME_OPTIONS,
   customColors,
   onCustomColorChange,
   onResetCustomColors,
@@ -150,7 +154,7 @@ export function SettingsMenu({
                         Choose a predefined brand theme
                       </p>
                     </div>
-                    {COLOR_THEME_OPTIONS.map((opt) => (
+                    {colorThemeOptions.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"

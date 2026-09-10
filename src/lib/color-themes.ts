@@ -1,14 +1,24 @@
 import type { CSSProperties } from "react";
 
-export type ColorTheme = "default" | "pmk" | "tendrix" | "talentino AI";
+/**
+ * Brand presets. "default" applies no preset (the host's CSS on
+ * `.assistino-chat` wins); the others are one per product.
+ */
+export type ColorTheme = "default" | "assistino" | "pmk" | "tendrix" | "talentino AI";
+export type BrandTheme = Exclude<ColorTheme, "default">;
+
+/** Every brand, in menu order. */
+export const BRAND_THEMES: readonly BrandTheme[] = ["assistino", "pmk", "tendrix", "talentino AI"];
+export const COLOR_THEME_VALUES: readonly ColorTheme[] = ["default", ...BRAND_THEMES];
 export type Mode = "light" | "dark";
 
 /** Widget-scoped node style on the timeline rail. */
 export type NodeStyle = "icons" | "dots";
 
-type CssVars = Record<string, string>;
+export type CssVars = Record<string, string>;
 
-interface ThemeDefinition {
+/** A brand's CSS variables — the shape hosts pass to `colorThemes` too. */
+export interface ThemeDefinition {
   /** Applies in both light and dark mode (radius, fonts, spacing, etc). */
   base?: CssVars;
   /** Overrides/adds on top of `base` when the widget is light. */
@@ -17,7 +27,63 @@ interface ThemeDefinition {
   dark?: CssVars;
 }
 
-export const COLOR_THEMES: Record<Exclude<ColorTheme, "default">, ThemeDefinition> = {
+export type ColorThemeMap = Record<BrandTheme, ThemeDefinition>;
+
+/** Per-brand overrides a host can layer on the built-in presets. */
+export type ColorThemeOverrides = Partial<Record<BrandTheme, ThemeDefinition>>;
+
+export const COLOR_THEMES: ColorThemeMap = {
+  /** The engine palette made explicit — emerald primary on neutral greys. */
+  assistino: {
+    base: {
+      "--radius": "1.2rem",
+      "--font-sans": '"Inter Variable", ui-sans-serif, system-ui, sans-serif',
+      "--font-heading": '"Space Grotesk Variable", var(--font-sans)',
+    },
+    light: {
+      "--primary": "oklch(0.6929 0.1396 166.5513)",
+      "--primary-foreground": "oklch(1 0 0)",
+      "--ring": "oklch(0.6929 0.1396 166.5513)",
+      "--background": "oklch(1 0 0)",
+      "--foreground": "oklch(0.2686 0 0)",
+      "--card": "oklch(1 0 0)",
+      "--card-foreground": "oklch(0.1281 0.0179 169.2764)",
+      "--popover": "oklch(1 0 0)",
+      "--popover-foreground": "oklch(0.1281 0.0179 169.2764)",
+      "--secondary": "oklch(0.9596 0.0275 167.8295)",
+      "--secondary-foreground": "oklch(0.2868 0.0649 159.9823)",
+      "--muted": "oklch(0.9702 0 0)",
+      "--muted-foreground": "oklch(0.5486 0 0)",
+      "--accent": "oklch(0.9596 0.0275 167.8295)",
+      "--accent-foreground": "oklch(0.2868 0.0649 159.9823)",
+      "--destructive": "oklch(0.6368 0.2078 25.3313)",
+      "--destructive-foreground": "oklch(1 0 0)",
+      "--border": "oklch(0.9208 0.0101 164.8536)",
+      "--input": "oklch(0.9208 0.0101 164.8536)",
+    },
+    dark: {
+      "--primary": "oklch(0.6929 0.1396 166.5513)",
+      "--primary-foreground": "oklch(1 0 0)",
+      "--ring": "oklch(0.6929 0.1396 166.5513)",
+      "--background": "oklch(0.24 0 0)",
+      "--foreground": "oklch(0.98 0 0)",
+      "--card": "oklch(0.28 0 0)",
+      "--card-foreground": "oklch(0.98 0 0)",
+      "--popover": "oklch(0.28 0 0)",
+      "--popover-foreground": "oklch(0.98 0 0)",
+      "--secondary": "oklch(0.33 0 0)",
+      "--secondary-foreground": "oklch(0.98 0 0)",
+      "--muted": "oklch(0.33 0 0)",
+      "--muted-foreground": "oklch(0.7 0 0)",
+      "--accent": "oklch(0.33 0 0)",
+      "--accent-foreground": "oklch(0.98 0 0)",
+      "--destructive": "oklch(0.6368 0.2078 25.3313)",
+      "--destructive-foreground": "oklch(1 0 0)",
+      "--border": "oklch(0.38 0 0)",
+      "--input": "oklch(0.38 0 0)",
+    },
+  },
+
   pmk: {
     base: {
       "--radius": "0.5rem",
@@ -157,32 +223,86 @@ export const COLOR_THEMES: Record<Exclude<ColorTheme, "default">, ThemeDefinitio
   },
 };
 
-export const COLOR_THEME_OPTIONS: { value: ColorTheme; label: string; swatch: string }[] = [
-  { value: "default", label: "Default", swatch: "oklch(0.6929 0.1396 166.5513)" },
-  { value: "pmk", label: "PMK", swatch: "hsl(221.2 83.2% 53.3%)" },
-  { value: "tendrix", label: "Tendrix", swatch: "#ff750e" },
-  { value: "talentino AI", label: "Talentino AI", swatch: "#076698" },
-];
+export interface ColorThemeOption {
+  value: ColorTheme;
+  label: string;
+  swatch: string;
+}
+
+const THEME_LABELS: Record<ColorTheme, string> = {
+  default: "Default",
+  assistino: "Assistino",
+  pmk: "PMK",
+  tendrix: "Tendrix",
+  "talentino AI": "Talentino AI",
+};
+
+/**
+ * Menu entries for `themes` — the swatch is each brand's light primary, so a
+ * host override that changes the primary changes the swatch too.
+ */
+export function colorThemeOptions(themes: ColorThemeMap = COLOR_THEMES): ColorThemeOption[] {
+  return COLOR_THEME_VALUES.map((value) => ({
+    value,
+    label: THEME_LABELS[value],
+    swatch:
+      value === "default"
+        ? "var(--primary)"
+        : themes[value].light?.["--primary"] ?? themes[value].base?.["--primary"] ?? "var(--primary)",
+  }));
+}
+
+/** Menu entries for the built-in presets. */
+export const COLOR_THEME_OPTIONS: ColorThemeOption[] = colorThemeOptions();
+
+/**
+ * Layer host overrides on the built-in presets, variable by variable, so a
+ * host can give one brand a different primary without restating its palette.
+ */
+export function mergeColorThemes(overrides?: ColorThemeOverrides): ColorThemeMap {
+  if (!overrides) return COLOR_THEMES;
+  const out = { ...COLOR_THEMES };
+  for (const brand of BRAND_THEMES) {
+    const o = overrides[brand];
+    if (!o) continue;
+    const b = COLOR_THEMES[brand];
+    out[brand] = {
+      base: { ...b.base, ...o.base },
+      light: { ...b.light, ...o.light },
+      dark: { ...b.dark, ...o.dark },
+    };
+  }
+  return out;
+}
 
 export const CUSTOMIZABLE_VARS = ["--primary", "--secondary", "--accent"] as const;
 export type CustomColorKey = (typeof CUSTOMIZABLE_VARS)[number];
 export type CustomColors = Partial<Record<CustomColorKey, string>>;
 
 export function isColorTheme(value: unknown): value is ColorTheme {
-  return value === "default" || (typeof value === "string" && value in COLOR_THEMES);
+  return typeof value === "string" && (COLOR_THEME_VALUES as readonly string[]).includes(value);
 }
 
 /** The variables a brand preset contributes for one mode, as a style object. */
-export function colorThemeVars(theme: ColorTheme, mode: Mode): CSSProperties {
+export function colorThemeVars(
+  theme: ColorTheme,
+  mode: Mode,
+  themes: ColorThemeMap = COLOR_THEMES,
+): CSSProperties {
   if (theme === "default") return {};
-  const def = COLOR_THEMES[theme];
+  const def = themes[theme];
   return { ...def.base, ...def[mode] } as CSSProperties;
 }
 
 /** The preset's own value for a customizable color, "" when it has none. */
-export function presetColor(theme: ColorTheme, mode: Mode, variable: CustomColorKey): string {
+export function presetColor(
+  theme: ColorTheme,
+  mode: Mode,
+  variable: CustomColorKey,
+  themes: ColorThemeMap = COLOR_THEMES,
+): string {
   if (theme === "default") return "";
-  return COLOR_THEMES[theme][mode]?.[variable] ?? "";
+  return themes[theme][mode]?.[variable] ?? themes[theme].base?.[variable] ?? "";
 }
 
 const PREFIX = "assistino-chat:";
