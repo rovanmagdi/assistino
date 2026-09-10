@@ -6,14 +6,12 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 import { streamChat, type ChatRequestMessage, type StreamChatOptions } from "../lib/sse";
 import { REASONING_TYPE_SPEED_MS } from "./timeline-node";
 import { cn, newSessionId, nowTime, uid } from "../lib/utils";
 import { useTheme, type ThemePreference } from "../lib/use-theme";
-import { themeTokensToVars, type ThemeTokens } from "../lib/theme-tokens";
 import { useChatSettings } from "../lib/use-chat-settings";
 import {
   readSetting,
@@ -70,32 +68,20 @@ export function useChat(): ChatContextValue {
 export interface ChatRootProps {
   /** Origin of the ReAct backend. Omit for same-origin. */
   apiBaseUrl?: string;
-  /** Path of the SSE chat endpoint. Defaults to "/v1/chat/completions". */
-  apiPath?: string;
-  /** Model id sent with each turn; the server treats it as a label. */
-  model?: string;
   /** Extra request headers. */
   headers?: Record<string, string>;
   /** Sends cookies cross-origin. Pass "include" when the API is on another host. */
   credentials?: RequestCredentials;
-  /** Swap in a custom fetch (auth refresh, instrumentation, tests). */
-  fetch?: typeof fetch;
   /** Conversation id. Generated per mount and rotated on Clear when omitted. */
   sessionId?: string;
   /** Light/dark handling — see {@link ThemePreference}. Defaults to "inherit". */
   theme?: ThemePreference;
-  /** Color, radius, and font overrides — see {@link ThemeTokens}. Partial sets are fine. */
-  tokens?: ThemeTokens;
-  /** Overrides applied on top of `tokens` while dark. */
-  darkTokens?: ThemeTokens;
   /** Brand preset to start from — "default", "pmk", "tendrix", or "talentino AI". */
   colorTheme?: ColorTheme;
   /** Starting rail marker style: "icons" (default) or "dots". */
   nodeStyle?: NodeStyle;
   /** Remember settings-menu choices in localStorage. Defaults to true. */
   persistSettings?: boolean;
-  /** Inline styles on the root element. Merged after the token variables. */
-  style?: CSSProperties;
   /** Take the viewport (h-screen) instead of filling the parent. */
   fullScreen?: boolean;
   /** Extra classes on the root element. */
@@ -109,19 +95,13 @@ export interface ChatRootProps {
 /** Owns the transcript, the SSE stream, theme, and settings. Lay the parts out inside it. */
 export function ChatRoot({
   apiBaseUrl,
-  apiPath,
-  model,
   headers,
   credentials,
-  fetch: fetchImpl,
   sessionId,
   theme = "inherit",
-  tokens,
-  darkTokens,
   colorTheme: defaultColorTheme = "default",
   nodeStyle: defaultNodeStyle = "icons",
   persistSettings = true,
-  style,
   fullScreen = false,
   className,
   onMessagesChange,
@@ -160,14 +140,6 @@ export function ChatRoot({
   const onMessagesChangeRef = useRef(onMessagesChange);
   onMessagesChangeRef.current = onMessagesChange;
 
-  const rootStyle = useMemo<CSSProperties>(
-    () => ({
-      ...themeTokensToVars(tokens, isDark ? darkTokens : undefined),
-      ...settings.vars,
-      ...style,
-    }),
-    [tokens, darkTokens, isDark, settings.vars, style],
-  );
 
   const customColorValues = settings.customColorValues((v) =>
     settingsOpen && rootRef.current
@@ -182,14 +154,11 @@ export function ChatRoot({
   const transport = useMemo<StreamChatOptions>(
     () => ({
       baseUrl: apiBaseUrl,
-      path: apiPath,
-      model,
       headers,
       credentials,
-      fetch: fetchImpl,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [apiBaseUrl, apiPath, model, JSON.stringify(headers ?? null), credentials, fetchImpl],
+    [apiBaseUrl, JSON.stringify(headers ?? null), credentials],
   );
 
   const patch = useCallback(
@@ -379,7 +348,7 @@ export function ChatRoot({
       <div
         ref={rootRef}
         data-theme={resolvedTheme ?? undefined}
-        style={rootStyle}
+        style={settings.vars}
         className={cn(
           "assistino-chat relative flex min-h-0 flex-col bg-background text-foreground",
           fullScreen ? "h-screen" : "h-full",

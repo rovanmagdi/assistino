@@ -113,9 +113,9 @@ function str(v: unknown): string | undefined {
 function parseWebSearch(raw: string): NormalizedResult {
   const sources: { url: string; title: string; snippet: string }[] = [];
   for (const block of raw.split(/\n\n-{3,}\n\n/)) {
-    const url = /^URL:\s*(.+)$/m.exec(block)?.[1]?.trim();
+    const url = /^URL:[ \t]*(.+)$/m.exec(block)?.[1]?.trim();
     if (!url || !/^https?:\/\//i.test(url)) continue;
-    const title = /^Title:\s*(.*)$/m.exec(block)?.[1]?.trim() ?? "";
+    const title = /^Title:[ \t]*(.*)$/m.exec(block)?.[1]?.trim() ?? "";
     const snippet = /^Snippet:\s*([\s\S]*?)\s*$/m.exec(block)?.[1]?.trim() ?? "";
     sources.push({ url, title: title || url, snippet });
   }

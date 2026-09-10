@@ -4,7 +4,10 @@
   "description": "Embeddable React chat UI for the Assistino ReAct agent — streamed answers with a live timeline of the agent's reasoning, tool calls, and observations.",
   "license": "UNLICENSED",
   "type": "module",
-  "sideEffects": ["**/*.css", "./dist/styles.js"],
+  "sideEffects": [
+    "**/*.css",
+    "./dist/styles.js"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -28,6 +31,8 @@
     "build:demo": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepack": "npm run build",
     "prepare": "npm run build"
   },
@@ -56,7 +61,8 @@
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "vitest": "^3.2.7"
   },
   "publishConfig": {
     "access": "restricted"

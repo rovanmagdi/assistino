@@ -78,19 +78,13 @@ parts — see [Composing the parts](#composing-the-parts).
 | Prop | Default | What it does |
 | --- | --- | --- |
 | `apiBaseUrl` | `""` (same origin) | Origin of the ReAct backend |
-| `apiPath` | `"/v1/chat/completions"` | SSE chat endpoint path |
-| `model` | `"react-agent"` | Model id sent with each turn |
 | `headers` | — | Extra request headers (e.g. `Authorization`) |
 | `credentials` | — | Pass `"include"` to send cookies cross-origin |
-| `fetch` | `globalThis.fetch` | Custom fetch (auth refresh, tests) |
 | `sessionId` | generated per mount | Pin the conversation to an id you control |
 | `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
 | `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"`. Starting value for the settings menu; `<ChatBody nodeStyle />` pins it |
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
 | `theme` | `"inherit"` | `"inherit"` \| `"system"` \| `"light"` \| `"dark"` |
-| `tokens` | — | Colors, radius, and fonts to override — see [Theming](#theming) |
-| `darkTokens` | — | Overrides applied on top of `tokens` while dark |
-| `style` | — | Inline styles on the root element |
 | `fullScreen` | `false` | Take the viewport (`h-screen`) instead of the parent box |
 | `className` | — | Extra classes on the root element |
 | `onMessagesChange` | — | Called with the full transcript as it changes |
@@ -99,25 +93,11 @@ parts — see [Composing the parts](#composing-the-parts).
 ### Theming
 
 Nothing about the palette is baked in — every color, radius, and font is a
-token you can replace. Pick whichever route suits your app; they compose, with
-the `tokens` prop winning over CSS, which wins over the defaults.
+CSS variable you can replace. Pick whichever route suits your app; they
+compose, with your CSS winning over the defaults.
 
-**1. The `tokens` prop** — typed, no CSS file needed. A partial set is fine:
-
-```tsx
-<ChatRoot
-  tokens={{ primary: "#7C3AED", accent: "#F3E8FF", radius: "0.5rem" }}
-  darkTokens={{ primary: "#A78BFA" }}
->
-  …
-</ChatRoot>
-```
-
-`darkTokens` layers on top of `tokens` only while the widget is dark, so one
-component call covers both themes.
-
-**2. CSS on the widget root** — better when the colors already live in your
-stylesheet:
+**1. CSS on the widget root** — set the variables where your colors already
+live:
 
 ```css
 .assistino-chat {
@@ -126,7 +106,7 @@ stylesheet:
 }
 ```
 
-**3. Inherit your app's tokens** — point the widget's tokens at your own
+**2. Inherit your app's tokens** — point the widget's tokens at your own
 variables and it follows your theme switcher for free:
 
 ```css
@@ -140,7 +120,7 @@ variables and it follows your theme switcher for free:
 Most rebrands only need `primary` (user bubbles, buttons, links, active
 states); `accent` and `border` are the next two worth setting.
 
-| Token | Used for |
+| Variable | Used for |
 | --- | --- |
 | `background` / `foreground` | The widget's page and its default text |
 | `card` / `cardForeground` | Raised surfaces — composer, code blocks, tool panels |
@@ -162,7 +142,7 @@ The defaults mirror Assistino_Engine's `index.css`: `--primary` is
 `accent` are a pale mint, and the surfaces are neutral greys. `success` and
 `warning` are the widget's own additions, since the engine has no status tokens.
 
-All of it — tokens and the reset — is scoped to the widget's root element
+All of it — variables and the reset — is scoped to the widget's root element
 (`.assistino-chat`), and the stylesheet ships **without** Tailwind preflight,
 so embedding it cannot restyle the page around it. Dark mode follows, in
 order: an explicit `theme` prop, then a `.dark` ancestor (the usual Tailwind
@@ -183,7 +163,7 @@ widget without any code on your side:
   `--accent`, stored per preset and per mode, with a reset.
 - **Timeline** — icon circles on the rail, or plain dots.
 
-Choices layer on top of your `tokens` (an explicit pick in the UI beats a host
+Choices layer on top of your CSS (an explicit pick in the UI beats a host
 default) and are applied as inline variables on the widget root, never on
 `<html>`. They are remembered in localStorage under `assistino-chat:*` keys;
 pass `persistSettings={false}` to keep them per session, or
@@ -265,7 +245,7 @@ import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agen
 
 | Part | Owns | Props |
 | --- | --- | --- |
-| `ChatRoot` | transcript state, the SSE stream, theme, tokens, settings; renders the `.assistino-chat` root | the [`ChatRoot` props](#chatroot-props) table above |
+| `ChatRoot` | transcript state, the SSE stream, theme, settings; renders the `.assistino-chat` root | the [`ChatRoot` props](#chatroot-props) table above |
 | `ChatHeader` | title strip, Clear, theme toggle, settings menu | `children` (your content; nothing by default), or `icon` / `title` / `subtitle` for the two-line layout; `actions`, `showClear`, `showThemeToggle`, `showSettings` |
 | `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is a ready-made one: `suggestions`, `title`, `description`, `icon`, and `classNames` (`{ emptyState, title, description, suggestions, suggestion }`). `nodeStyle` — pin the timeline markers to `"icons"` or `"dots"` regardless of the settings menu. `className` |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
@@ -325,6 +305,7 @@ Vite proxies `/v1` and `/api` to `http://127.0.0.1:8000` (override with
 | `npm run build` | the package → `dist/` (ESM + `style.css` + `.d.ts`) |
 | `npm run build:demo` | the standalone demo app → `dist-demo/` |
 | `npm run typecheck` | `tsc` over `src/` and `demo/` |
+| `npm test` | Vitest unit tests (`src/**/*.test.ts`); `npm run test:watch` re-runs on change |
 
 ## Stack
 
