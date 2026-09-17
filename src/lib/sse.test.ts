@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AgentEvent } from "../types";
-import { DEFAULT_CHAT_PATH, streamChat } from "./sse";
+import { DEFAULT_ANSWER_PATH, DEFAULT_CHAT_PATH, answerQuestion, streamChat } from "./sse";
 
 /** Build a fetch stub that streams `frames` (already SSE-formatted) in the given chunks. */
 function fakeFetch(chunks: string[], init: Partial<Response> = {}) {
@@ -72,6 +72,47 @@ describe("streamChat request", () => {
       "Request failed (500): nope",
     );
   });
+
+  it("sends nl2sql_style and nl2sql_length only when set", async () => {
+    const { fetchImpl, calls } = fakeFetch(["data: [DONE]\n\n", "data: [DONE]\n\n"]);
+    await collect(streamChat([], { fetch: fetchImpl }));
+    expect(JSON.parse(String(calls[0].init.body))).not.toHaveProperty("nl2sql_style");
+    expect(JSON.parse(String(calls[0].init.body))).not.toHaveProperty("nl2sql_length");
+
+    await collect(
+      streamChat([], { fetch: fetchImpl, nl2sqlStyle: "client", nl2sqlLength: "short" }),
+    );
+    const body = JSON.parse(String(calls[1].init.body));
+    expect(body.nl2sql_style).toBe("client");
+    expect(body.nl2sql_length).toBe("short");
+  });
+});
+
+describe("answerQuestion", () => {
+  it("posts the question id and answer with the shared transport", async () => {
+    const { fetchImpl, calls } = fakeFetch([""]);
+    await answerQuestion("q1", "yes", {
+      baseUrl: "https://api.example.com/",
+      headers: { Authorization: "Bearer t" },
+      credentials: "include",
+      fetch: fetchImpl,
+    });
+    expect(calls[0].url).toBe(`https://api.example.com${DEFAULT_ANSWER_PATH}`);
+    expect(calls[0].init.method).toBe("POST");
+    expect(calls[0].init.credentials).toBe("include");
+    expect(calls[0].init.headers).toEqual({
+      "Content-Type": "application/json",
+      Authorization: "Bearer t",
+    });
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ question_id: "q1", answer: "yes" });
+  });
+
+  it("throws with status and body text on a non-2xx response", async () => {
+    const { fetchImpl } = fakeFetch(["unknown question"], { status: 404 });
+    await expect(answerQuestion("q1", "yes", { fetch: fetchImpl })).rejects.toThrow(
+      "Answer failed (404): unknown question",
+    );
+  });
 });
 
 describe("streamChat event mapping", () => {
@@ -80,6 +121,12 @@ describe("streamChat event mapping", () => {
       data({ type: "tool_status", content: "thinking" }),
       data({ type: "tool_start", tool_call_id: "c1", tool_name: "web_search", arguments: { q: "x" } }),
       data({ type: "tool_progress", tool_call_id: "c1", tool_name: "web_search", message: "50%" }),
+      data({
+        type: "tool_sub_event",
+        tool_call_id: "c1",
+        tool_name: "nl2sql",
+        detail: { kind: "sub_thought", text: "check" },
+      }),
       data({ type: "tool_end", tool_call_id: "c1", tool_name: "web_search", result: "ok" }),
       data({ choices: [{ delta: { content: "Hel" } }] }),
       data({ choices: [{ delta: { content: "lo" } }] }),
@@ -91,6 +138,7 @@ describe("streamChat event mapping", () => {
       { kind: "thought", content: "thinking" },
       { kind: "tool_start", callId: "c1", tool: "web_search", args: { q: "x" } },
       { kind: "tool_progress", callId: "c1", tool: "web_search", message: "50%" },
+      { kind: "tool_sub_event", callId: "c1", tool: "nl2sql", detail: { kind: "sub_thought", text: "check" } },
       { kind: "tool_end", callId: "c1", tool: "web_search", result: "ok" },
       { kind: "text", content: "Hel" },
       { kind: "text", content: "lo" },

@@ -306,6 +306,9 @@
 .assistino-chat .node-style-dots .step-node[data-tone="danger"]::after {
   background: var(--destructive);
 }
+.assistino-chat .node-style-dots .step-node[data-tone="warning"]::after {
+  background: var(--warning);
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Markdown prose (react-markdown output). Unlayered, so it outranks the

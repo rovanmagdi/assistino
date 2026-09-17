@@ -15,12 +15,17 @@ export type {
   ComposerRenderApi,
 } from "./components/chat-parts";
 
-export { streamChat, DEFAULT_CHAT_PATH } from "./lib/sse";
-export type { ChatRequestMessage, StreamChatOptions } from "./lib/sse";
+export { streamChat, answerQuestion, DEFAULT_CHAT_PATH, DEFAULT_ANSWER_PATH } from "./lib/sse";
+export type { ChatRequestMessage, StreamChatOptions, AnswerQuestionOptions } from "./lib/sse";
 
 export { AgentTimeline } from "./components/agent-timeline";
+export type { AgentTimelineProps } from "./components/agent-timeline";
 export { TimelineNode, REASONING_TYPE_SPEED_MS } from "./components/timeline-node";
+export type { TimelineNodeProps } from "./components/timeline-node";
 export { AssistantMessage, UserMessage } from "./components/message";
+export type { AssistantMessageProps } from "./components/message";
+export { TOOL_SKIN_BODIES, FlatToolBody, TerminalToolBody } from "./components/tool-skins";
+export type { ToolBodyProps } from "./components/tool-skins";
 export { Composer } from "./components/composer";
 export type { ComposerOptions, ComposerClassNames, ComposerActions } from "./components/composer";
 export { Markdown } from "./components/markdown";
@@ -64,5 +69,26 @@ export type {
 } from "./lib/color-themes";
 export { useChatSettings } from "./lib/use-chat-settings";
 export type { ChatSettingsOptions } from "./lib/use-chat-settings";
+export {
+  DEV_ONLY_TOOLS,
+  PROSE_LEVELS,
+  RESPONSE_LENGTHS,
+  TOOL_SKINS,
+  VIEW_MODES,
+  effectiveToolSkin,
+  isDevOnlyTool,
+  isStepHiddenFor,
+  nl2sqlStyleFor,
+} from "./lib/agent-view";
+export type { Prose, ResponseLength, ToolSkin, ViewMode } from "./lib/agent-view";
+export { summarizeObservation } from "./lib/summarize-observation";
+export type { SummarizedObservation } from "./lib/summarize-observation";
 
-export type { AgentEvent, ChatMessage, Role, TimelineStep } from "./types";
+export type {
+  AgentEvent,
+  ChatMessage,
+  OptionPreview,
+  Role,
+  SubEventDetail,
+  TimelineStep,
+} from "./types";

@@ -8,11 +8,23 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { streamChat, type ChatRequestMessage, type StreamChatOptions } from "../lib/sse";
+import {
+  answerQuestion,
+  streamChat,
+  type ChatRequestMessage,
+  type StreamChatOptions,
+} from "../lib/sse";
 import { REASONING_TYPE_SPEED_MS } from "./timeline-node";
 import { cn, newSessionId, nowTime, uid } from "../lib/utils";
 import { useTheme, type ThemePreference } from "../lib/use-theme";
 import { useChatSettings } from "../lib/use-chat-settings";
+import {
+  nl2sqlStyleFor,
+  type Prose,
+  type ResponseLength,
+  type ToolSkin,
+  type ViewMode,
+} from "../lib/agent-view";
 import {
   readSetting,
   writeSetting,
@@ -38,11 +50,13 @@ export interface ChatContextValue {
   stop: () => void;
   /** Drop the transcript and start a new conversation. */
   clear: () => void;
+  /** Resolve a paused human-in-the-loop question. */
+  answerQuestion: (messageId: string, stepId: string, questionId: string, answer: string) => void;
   /** Resolved appearance of the widget. */
   isDark: boolean;
   toggleTheme: () => void;
   setDark: (dark: boolean) => void;
-  /** Settings-menu state (brand preset, custom colors, node style). */
+  /** Settings-menu state (brand, custom colors, node style, view mode, prose, …). */
   settings: ReturnType<typeof useChatSettings>;
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
@@ -58,9 +72,7 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export function useChat(): ChatContextValue {
   const ctx = useContext(ChatContext);
   if (!ctx) {
-    throw new Error(
-      "useChat() must be used inside <ChatRoot />.",
-    );
+    throw new Error("useChat() must be used inside <ChatRoot />.");
   }
   return ctx;
 }
@@ -79,13 +91,20 @@ export interface ChatRootProps {
   theme?: ThemePreference;
   /** Brand preset to start from — "default", "assistino", "pmk", "tendrix", or "talentino AI". */
   colorTheme?: ColorTheme;
-  /**
-   * Give a brand its own look: per-brand CSS variables merged over the
-   * built-in presets, e.g. `{ pmk: { light: { "--primary": "#1d4ed8" } } }`.
-   */
+  /** Per-brand CSS variables merged over the built-in presets. */
   colorThemes?: ColorThemeOverrides;
   /** Starting rail marker style: "icons" (default) or "dots". */
   nodeStyle?: NodeStyle;
+  /** Starting view: "client" (default) or "developer". Also sets the answer tone sent to the backend. */
+  viewMode?: ViewMode;
+  /** `false` locks the widget to "client" and hides the Developer option. Defaults to true. */
+  developerView?: boolean;
+  /** Starting tool-node skin for the Developer view: "flat" (default) or "terminal". */
+  toolSkin?: ToolSkin;
+  /** Starting narration density: "explained" (default) or "plain". */
+  prose?: Prose;
+  /** Starting length of the final answer: "short", "medium", or "long" (default). */
+  responseLength?: ResponseLength;
   /** Remember settings-menu choices in localStorage. Defaults to true. */
   persistSettings?: boolean;
   /** Take the viewport (h-screen) instead of filling the parent. */
@@ -108,6 +127,11 @@ export function ChatRoot({
   colorTheme: defaultColorTheme = "default",
   colorThemes,
   nodeStyle: defaultNodeStyle = "icons",
+  viewMode: defaultViewMode = "client",
+  developerView = true,
+  toolSkin: defaultToolSkin = "flat",
+  prose: defaultProse = "explained",
+  responseLength: defaultResponseLength = "long",
   persistSettings = true,
   fullScreen = false,
   className,
@@ -131,6 +155,11 @@ export function ChatRoot({
   const settings = useChatSettings(isDark ? "dark" : "light", {
     defaultColorTheme,
     defaultNodeStyle,
+    defaultViewMode,
+    developerView,
+    defaultToolSkin,
+    defaultProse,
+    defaultResponseLength,
     persist: persistSettings,
     colorThemes,
   });
@@ -147,7 +176,6 @@ export function ChatRoot({
 
   const onMessagesChangeRef = useRef(onMessagesChange);
   onMessagesChangeRef.current = onMessagesChange;
-
 
   const customColorValues = settings.customColorValues((v) =>
     settingsOpen && rootRef.current
@@ -176,6 +204,8 @@ export function ChatRoot({
     [],
   );
 
+  const { viewMode, responseLength } = settings;
+
   const handleSend = useCallback(
     async (text: string) => {
       const history: ChatRequestMessage[] = messages
@@ -200,33 +230,36 @@ export function ChatRoot({
 
       let reasoningRevealDeadline = 0;
 
+      const pushReasoning = (content: string) => {
+        const revealMs = Math.min(
+          content.length * REASONING_TYPE_SPEED_MS + 200,
+          MAX_REASONING_REVEAL_DELAY_MS,
+        );
+        reasoningRevealDeadline = performance.now() + revealMs;
+        patch(assistantId, (m) => ({
+          ...m,
+          steps: [...(m.steps ?? []), { id: uid("reason"), kind: "reasoning", text: content }],
+        }));
+      };
+
       try {
         const stream = streamChat(history, {
           ...transport,
           signal: controller.signal,
           sessionId: sessionIdRef.current,
+          nl2sqlStyle: nl2sqlStyleFor(viewMode),
+          nl2sqlLength: responseLength,
         });
         for await (const evt of stream) {
           if (evt.kind === "thought") {
-            const revealMs = Math.min(
-              evt.content.length * REASONING_TYPE_SPEED_MS + 200,
-              MAX_REASONING_REVEAL_DELAY_MS,
-            );
-            reasoningRevealDeadline = performance.now() + revealMs;
-            patch(assistantId, (m) => ({
-              ...m,
-              steps: [
-                ...(m.steps ?? []),
-                { id: uid("reason"), kind: "reasoning", text: evt.content } as TimelineStep,
-              ],
-            }));
+            pushReasoning(evt.content);
           } else if (evt.kind === "tool_start") {
             const revealDelayMs = Math.max(0, reasoningRevealDeadline - performance.now());
             patch(assistantId, (m) => ({
               ...m,
               steps: [
                 ...(m.steps ?? []),
-                { id: uid("sel"), kind: "tool_selected", tool: evt.tool, revealDelayMs } as TimelineStep,
+                { id: uid("sel"), kind: "tool_selected", tool: evt.tool, revealDelayMs },
                 {
                   id: uid("tool"),
                   kind: "tool",
@@ -236,7 +269,8 @@ export function ChatRoot({
                   status: "running",
                   progress: [],
                   revealDelayMs,
-                } as TimelineStep,
+                  startedAt: Date.now(),
+                },
               ],
             }));
           } else if (evt.kind === "tool_progress") {
@@ -248,6 +282,68 @@ export function ChatRoot({
                   : s,
               ),
             }));
+          } else if (evt.kind === "tool_sub_event") {
+            const { detail } = evt;
+            if (detail.kind === "sub_thought") {
+              pushReasoning(detail.text);
+            } else if (detail.kind === "sub_tool_start") {
+              const revealDelayMs = Math.max(0, reasoningRevealDeadline - performance.now());
+              patch(assistantId, (m) => ({
+                ...m,
+                steps: [
+                  ...(m.steps ?? []),
+                  {
+                    id: uid("tool"),
+                    kind: "tool",
+                    callId: uid("subcall"),
+                    tool: detail.tool,
+                    args: detail.args,
+                    status: "running",
+                    progress: [],
+                    revealDelayMs,
+                    startedAt: Date.now(),
+                  },
+                ],
+              }));
+            } else if (detail.kind === "sub_tool_result") {
+              patch(assistantId, (m) => {
+                const steps = m.steps ?? [];
+                const idx = [...steps]
+                  .reverse()
+                  .findIndex(
+                    (s) => s.kind === "tool" && s.tool === detail.tool && s.status === "running",
+                  );
+                if (idx === -1) return m;
+                const realIdx = steps.length - 1 - idx;
+                const target = steps[realIdx];
+                if (target.kind !== "tool") return m;
+                const isError = detail.observation.trimStart().startsWith("[Error]");
+                const next = [...steps];
+                next[realIdx] = {
+                  ...target,
+                  status: isError ? "error" : "done",
+                  observation: detail.observation,
+                };
+                return { ...m, steps: next };
+              });
+            } else if (detail.kind === "human_question") {
+              patch(assistantId, (m) => ({
+                ...m,
+                steps: [
+                  ...(m.steps ?? []),
+                  {
+                    id: uid("ask"),
+                    kind: "human_question",
+                    questionId: detail.question_id,
+                    question: detail.question,
+                    options: detail.options,
+                    context: detail.context,
+                    previews: detail.previews,
+                    answered: false,
+                  },
+                ],
+              }));
+            }
           } else if (evt.kind === "tool_end") {
             const isError = evt.result.trimStart().startsWith("[Error]");
             const status: "done" | "error" = isError ? "error" : "done";
@@ -263,12 +359,12 @@ export function ChatRoot({
                   tool: evt.tool,
                   result: evt.result,
                   isError,
-                } as TimelineStep,
+                },
               ],
             }));
           } else if (evt.kind === "text") {
             patch(assistantId, (m) => {
-              const steps = [...(m.steps ?? [])];
+              const steps: TimelineStep[] = [...(m.steps ?? [])];
               const last = steps[steps.length - 1];
               if (last && last.kind === "explaining") {
                 steps[steps.length - 1] = { ...last, text: last.text + evt.content };
@@ -279,7 +375,7 @@ export function ChatRoot({
             });
           } else if (evt.kind === "done") {
             patch(assistantId, (m) => {
-              const steps = [...(m.steps ?? [])];
+              const steps: TimelineStep[] = [...(m.steps ?? [])];
               const last = steps[steps.length - 1];
               if (last && last.kind === "explaining") {
                 steps[steps.length - 1] = { id: last.id, kind: "answer", text: last.text };
@@ -303,7 +399,27 @@ export function ChatRoot({
         abortRef.current = null;
       }
     },
-    [messages, patch, transport],
+    [messages, patch, transport, viewMode, responseLength],
+  );
+
+  const handleAnswerQuestion = useCallback(
+    async (messageId: string, stepId: string, questionId: string, answer: string) => {
+      patch(messageId, (m) => ({
+        ...m,
+        steps: (m.steps ?? []).map((s) =>
+          s.kind === "human_question" && s.id === stepId ? { ...s, answered: true, answer } : s,
+        ),
+      }));
+      try {
+        await answerQuestion(questionId, answer, transport);
+      } catch (err) {
+        patch(messageId, (m) => ({
+          ...m,
+          error: err instanceof Error ? err.message : "Could not send your answer",
+        }));
+      }
+    },
+    [patch, transport],
   );
 
   const handleStop = useCallback(() => {
@@ -326,6 +442,7 @@ export function ChatRoot({
       send: handleSend,
       stop: handleStop,
       clear: handleClear,
+      answerQuestion: handleAnswerQuestion,
       isDark,
       toggleTheme,
       setDark,
@@ -342,6 +459,7 @@ export function ChatRoot({
       handleSend,
       handleStop,
       handleClear,
+      handleAnswerQuestion,
       isDark,
       toggleTheme,
       setDark,

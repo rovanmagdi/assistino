@@ -1,28 +1,37 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import {
+  BarChart3,
+  BookmarkPlus,
+  BookOpen,
   Brain,
   Check,
-  ChevronDown,
   CircleDot,
   ClipboardList,
+  Code2,
   Crosshair,
   Database,
   Eye,
   Globe,
+  HelpCircle,
   Linkedin,
-  Loader2,
   MessageCircle,
   Sparkles,
+  Table2,
+  Terminal,
   TriangleAlert,
   Wrench,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Markdown } from "./markdown";
 import { ToolResult } from "./tools/tool-result";
-import type { TimelineStep } from "../types";
+import { summarizeObservation } from "../lib/summarize-observation";
+import { Typewriter, humanizeArgs, summarizeArgs } from "./tool-skins/shared";
+import { TOOL_SKIN_BODIES } from "./tool-skins";
+import { effectiveToolSkin, type Prose, type ToolSkin, type ViewMode } from "../lib/agent-view";
+import type { OptionPreview, TimelineStep } from "../types";
 
-/** ms per character for the reasoning typewriter. */
+/** ms per character for the reasoning typewriter; also delays the tool node's reveal. */
 export const REASONING_TYPE_SPEED_MS = 4;
 
 const TOOL_ICONS: Record<string, typeof Wrench> = {
@@ -32,6 +41,13 @@ const TOOL_ICONS: Record<string, typeof Wrench> = {
   linkedin_url_scraper: Linkedin,
   linkedin_finding_search: Linkedin,
   linkedin_matching_search: Linkedin,
+  nl2sql: Database,
+  chart_visualisation: BarChart3,
+  check_lessons: BookOpen,
+  retrieve_table: Table2,
+  execute_sql: Terminal,
+  process_sql: Code2,
+  store_learning: BookmarkPlus,
 };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -41,78 +57,33 @@ const TOOL_LABELS: Record<string, string> = {
   linkedin_url_scraper: "LinkedIn Profile",
   linkedin_finding_search: "LinkedIn Search",
   linkedin_matching_search: "LinkedIn Match",
+  nl2sql: "Database Agent",
+  chart_visualisation: "Chart",
+  check_lessons: "Recall past learnings",
+  retrieve_table: "Retrieve table",
+  execute_sql: "Run query",
+  process_sql: "Process results",
+  store_learning: "Store learning",
+  ask_human: "Ask human",
+  resolve_value: "Resolve value",
+  retrieve_from_db: "Retrieve from DB",
+  post_process_rows: "Post-process rows",
+  describe_result: "Describe result",
 };
 
-/** Terminal-style live progress log shown while a tool runs. */
-function ProgressLog({
-  lines,
-  running,
-}: {
-  lines: { text: string; time: string }[];
-  running: boolean;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
-  }, [lines]);
+/** Client-mode header one-liners, in place of a raw args summary. */
+const CLIENT_SUMMARY_TEMPLATES: Record<string, (running: boolean) => string> = {
+  nl2sql: (running) => (running ? "Looking into the database…" : "Looked into the database"),
+  web_search: (running) => (running ? "Searching the web…" : "Searched the web"),
+  assistino_hr_action: (running) => (running ? "Working on that action…" : "Completed that action"),
+  chart_visualisation: (running) => (running ? "Building a chart…" : "Built a chart"),
+  check_lessons: () => "Recalling what I already know",
+  retrieve_table: () => "Looking for the right data",
+  execute_sql: () => "Checking real data",
+  process_sql: () => "Working through the results",
+  store_learning: () => "Making a note for next time",
+};
 
-  if (lines.length === 0) {
-    return running ? (
-      <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        working…
-      </div>
-    ) : null;
-  }
-
-  return (
-    <div className="overflow-hidden rounded-lg border border-border bg-zinc-950 dark:bg-zinc-900">
-      <div className="flex items-center gap-2 border-b border-white/10 px-3 py-1.5">
-        {running ? (
-          <Loader2 className="h-3 w-3 animate-spin text-primary" />
-        ) : (
-          <Check className="h-3 w-3 text-primary" />
-        )}
-        <span className="font-mono text-[11px] text-zinc-400">progress</span>
-      </div>
-      <div ref={ref} className="scrollbar-thin max-h-40 space-y-0.5 overflow-y-auto p-2">
-        {lines.map((l, i) => (
-          <div
-            key={i}
-            className={cn(
-              "font-mono text-[11px] leading-relaxed",
-              i === lines.length - 1 && running ? "text-primary-bright" : "text-zinc-500",
-            )}
-          >
-            <span className="mr-2 text-zinc-600">[{l.time}]</span>
-            {l.text}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Types a complete string out character-by-character. */
-function Typewriter({ text, speed = 16 }: { text: string; speed?: number }) {
-  const [shown, setShown] = useState("");
-
-  useEffect(() => {
-    setShown("");
-    if (!text) return;
-    let i = 0;
-    const id = setInterval(() => {
-      i += 1;
-      setShown(text.slice(0, i));
-      if (i >= text.length) clearInterval(id);
-    }, speed);
-    return () => clearInterval(id);
-  }, [text, speed]);
-
-  return <>{shown}</>;
-}
-
-/** The circle that sits on the vertical rail. */
 function StepCircle({ step }: { step: TimelineStep }) {
   const base =
     "step-node relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-background";
@@ -164,6 +135,20 @@ function StepCircle({ step }: { step: TimelineStep }) {
     );
   }
 
+  if (step.kind === "human_question") {
+    return (
+      <span
+        data-tone={step.answered ? "neutral" : "warning"}
+        className={cn(
+          base,
+          step.answered ? "border-border text-muted-foreground" : "border-warning text-warning",
+        )}
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+
   if (step.status === "running") {
     return (
       <span data-tone="accent" className={cn(base, "border-primary text-primary")}>
@@ -186,94 +171,199 @@ function StepCircle({ step }: { step: TimelineStep }) {
   );
 }
 
-function summarizeArgs(args: Record<string, unknown>): string {
-  const preferred = ["query", "url", "natural_query", "title", "keywords"];
-  for (const key of preferred) {
-    const v = args[key];
-    if (typeof v === "string" && v.trim()) return v;
-  }
-  const first = Object.values(args).find((v) => typeof v === "string" && v);
-  return typeof first === "string" ? first : "";
-}
-
-function ToolNode({ step }: { step: Extract<TimelineStep, { kind: "tool" }> }) {
-  const [open, setOpen] = useState(true);
-  const summary = summarizeArgs(step.args);
-  const hasArgs = Object.keys(step.args).length > 0;
+function ToolNode({
+  step,
+  viewMode,
+  toolSkin,
+  prose,
+}: {
+  step: Extract<TimelineStep, { kind: "tool" }>;
+  viewMode: ViewMode;
+  toolSkin: ToolSkin;
+  prose: Prose;
+}) {
+  const isClient = viewMode === "client";
+  const skin = effectiveToolSkin(viewMode, toolSkin);
+  const [open, setOpen] = useState(!isClient);
   const running = step.status === "running";
+  const hasArgs = Object.keys(step.args).length > 0;
   const Icon = TOOL_ICONS[step.tool] ?? Wrench;
   const label = TOOL_LABELS[step.tool] ?? step.tool;
+  const summary = isClient
+    ? (CLIENT_SUMMARY_TEMPLATES[step.tool]?.(running) ?? summarizeArgs(step.args))
+    : summarizeArgs(step.args);
+
+  const wasRunningRef = useRef(running);
+  const [justCompleted, setJustCompleted] = useState(false);
+  useEffect(() => {
+    const finished = wasRunningRef.current && !running;
+    wasRunningRef.current = running;
+    if (finished && !open) {
+      setJustCompleted(true);
+      const id = setTimeout(() => setJustCompleted(false), 900);
+      return () => clearTimeout(id);
+    }
+  }, [running, open]);
+
+  const summarized = step.observation !== undefined ? summarizeObservation(step.observation) : null;
+  const isSqlResult = summarized?.kind === "sql-result";
+  const hasDetail = hasArgs || step.observation !== undefined;
+
+  const Body = TOOL_SKIN_BODIES[skin];
 
   return (
-    <div className="rounded-xl border border-border bg-card/60">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left"
-      >
-        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span className="text-[13px] font-medium">{label}</span>
-        {summary && (
-          <span className="truncate text-xs text-muted-foreground">{summary}</span>
-        )}
-        <span className="ml-auto flex items-center gap-2">
-          {running && (
-            <span className="flex items-center gap-1 text-xs text-primary">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              running
-            </span>
-          )}
-          {step.status === "done" && <span className="text-xs text-muted-foreground">done</span>}
-          {step.status === "error" && <span className="text-xs text-destructive">error</span>}
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform",
-              open && "rotate-180",
-            )}
-          />
-        </span>
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18, ease: [0.165, 0.84, 0.44, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="space-y-2 border-t border-border px-3 py-2.5">
-              {hasArgs && (
-                <div>
-                  <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Arguments
-                  </div>
-                  <pre className="scrollbar-thin overflow-x-auto rounded-lg bg-muted/40 p-2 font-mono text-[12px] leading-relaxed">
-                    {JSON.stringify(step.args, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {(running || step.progress.length > 0) && (
-                <ProgressLog lines={step.progress} running={running} />
-              )}
-
-              {running && step.progress.length === 0 && (
-                <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  waiting for tool output…
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div
+      className={cn(
+        "-mx-2 rounded-lg px-2 py-1 transition-colors duration-500",
+        justCompleted && "bg-primary/10",
+      )}
+    >
+      <Body
+        step={step}
+        isClient={isClient}
+        prose={prose}
+        running={running}
+        open={open}
+        onToggleOpen={() => setOpen((v) => !v)}
+        icon={Icon}
+        label={label}
+        summary={summary}
+        hasArgs={hasArgs}
+        hasDetail={hasDetail}
+        humanizedArgs={humanizeArgs(step.args)}
+        summarized={summarized}
+        isSqlResult={isSqlResult}
+      />
     </div>
   );
 }
 
-export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boolean }) {
+function OptionCard({
+  label,
+  preview,
+  onPick,
+}: {
+  label: string;
+  preview?: OptionPreview;
+  onPick: () => void;
+}) {
+  const empty = preview != null && (preview.count === 0 || preview.count === null);
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className="flex flex-col gap-1.5 rounded-lg border border-border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:border-primary hover:bg-accent"
+    >
+      <span className="font-medium">{label}</span>
+      {preview && (
+        <>
+          <span
+            className={cn(
+              "text-[11px] uppercase tracking-wide",
+              empty ? "text-muted-foreground" : "font-medium text-success",
+            )}
+          >
+            {preview.summary}
+          </span>
+          {preview.samples.length > 0 && (
+            <ul className="mt-0.5 space-y-1">
+              {preview.samples.map((sample, i) => (
+                <li key={i} className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                  {sample}
+                </li>
+              ))}
+            </ul>
+          )}
+          {preview.error && (
+            <span className="text-xs text-muted-foreground">
+              Couldn&apos;t check this one — pick it anyway to have it worked out from scratch.
+            </span>
+          )}
+        </>
+      )}
+    </button>
+  );
+}
+
+function HumanQuestionNode({
+  step,
+  onAnswer,
+}: {
+  step: Extract<TimelineStep, { kind: "human_question" }>;
+  onAnswer?: (answer: string) => void;
+}) {
+  const [freeText, setFreeText] = useState("");
+
+  return (
+    <div className="rounded-xl border border-warning/40 bg-warning/[0.06] p-3">
+      <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-warning">
+        Needs your input
+      </div>
+      <div className="text-sm leading-relaxed">{step.question}</div>
+      {step.context && <div className="mt-1 text-xs text-muted-foreground">{step.context}</div>}
+
+      {step.answered ? (
+        <div className="mt-2 text-xs text-muted-foreground">
+          You answered: <span className="font-medium text-foreground">{step.answer}</span>
+        </div>
+      ) : step.options.length > 0 ? (
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {step.options.map((opt, i) => (
+            <OptionCard
+              key={opt}
+              label={opt}
+              preview={step.previews?.[i]}
+              onPick={() => onAnswer?.(opt)}
+            />
+          ))}
+        </div>
+      ) : (
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (freeText.trim()) onAnswer?.(freeText.trim());
+          }}
+        >
+          <input
+            value={freeText}
+            onChange={(e) => setFreeText(e.target.value)}
+            placeholder="Type your answer…"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-ring"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+          >
+            Send
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export interface TimelineNodeProps {
+  step: TimelineStep;
+  isLast: boolean;
+  /** Client/Developer — what the timeline renders at all. Defaults to "developer". */
+  viewMode?: ViewMode;
+  /** Flat/Terminal — how a tool node is drawn. Forced to "flat" for Client. Defaults to "flat". */
+  toolSkin?: ToolSkin;
+  /** Explained/Plain — how much narration shows. Defaults to "explained". */
+  prose?: Prose;
+  /** stepId, questionId, answer — resolves a paused human_question step. */
+  onAnswerQuestion?: (stepId: string, questionId: string, answer: string) => void;
+}
+
+export function TimelineNode({
+  step,
+  isLast,
+  viewMode = "developer",
+  toolSkin = "flat",
+  prose = "explained",
+  onAnswerQuestion,
+}: TimelineNodeProps) {
   const revealDelayMs =
     step.kind === "tool_selected" || step.kind === "tool" ? step.revealDelayMs ?? 0 : 0;
 
@@ -286,7 +376,10 @@ export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boo
     >
       {!isLast && (
         <span
-          className="absolute bottom-[-10px] left-[13px] top-[14px] w-px bg-border"
+          className={cn(
+            "absolute bottom-[-10px] left-[13px] top-[14px] w-px bg-border",
+            step.kind === "tool" && step.status === "running" && "animate-pulse bg-primary/50",
+          )}
           aria-hidden
         />
       )}
@@ -324,7 +417,9 @@ export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boo
         </div>
       )}
 
-      {step.kind === "tool" && <ToolNode step={step} />}
+      {step.kind === "tool" && (
+        <ToolNode step={step} viewMode={viewMode} toolSkin={toolSkin} prose={prose} />
+      )}
 
       {step.kind === "observation" && (
         <div className="pt-0.5">
@@ -346,6 +441,15 @@ export function TimelineNode({ step, isLast }: { step: TimelineStep; isLast: boo
             Answer
           </div>
           <Markdown>{step.text}</Markdown>
+        </div>
+      )}
+
+      {step.kind === "human_question" && (
+        <div className="pt-0.5">
+          <HumanQuestionNode
+            step={step}
+            onAnswer={(answer) => onAnswerQuestion?.(step.id, step.questionId, answer)}
+          />
         </div>
       )}
     </motion.li>

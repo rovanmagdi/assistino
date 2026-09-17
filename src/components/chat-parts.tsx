@@ -7,6 +7,7 @@ import { SettingsMenu } from "./settings-menu";
 import { AssistantMessage, UserMessage } from "./message";
 import { cn } from "../lib/utils";
 import type { NodeStyle } from "../lib/color-themes";
+import type { Prose, ToolSkin, ViewMode } from "../lib/agent-view";
 import { useChat } from "./chat-root";
 
 export interface ChatHeaderProps {
@@ -100,6 +101,15 @@ export function ChatHeader({
           onResetCustomColors={settings.resetCustomColors}
           nodeStyle={settings.nodeStyle}
           onNodeStyleChange={settings.setNodeStyle}
+          viewMode={settings.viewMode}
+          onViewModeChange={settings.setViewMode}
+          developerView={settings.developerView}
+          toolSkin={settings.toolSkin}
+          onToolSkinChange={settings.setToolSkin}
+          prose={settings.prose}
+          onProseChange={settings.setProse}
+          responseLength={settings.responseLength}
+          onResponseLengthChange={settings.setResponseLength}
         />
       )}
     </header>
@@ -111,14 +121,31 @@ export interface ChatBodyProps {
   children?: ReactNode;
   /** Pin the rail markers to `"icons"` or `"dots"`, overriding the settings menu. */
   nodeStyle?: NodeStyle;
+  /** Pin the view to `"client"` or `"developer"`, overriding the settings menu. */
+  viewMode?: ViewMode;
+  /** Pin the tool-node skin to `"flat"` or `"terminal"`, overriding the settings menu. */
+  toolSkin?: ToolSkin;
+  /** Pin the narration density to `"explained"` or `"plain"`, overriding the settings menu. */
+  prose?: Prose;
   className?: string;
 }
 
 /** The scrolling transcript, or `children` before the first message. */
-export function ChatBody({ children, nodeStyle, className }: ChatBodyProps) {
-  const { messages, isEmpty, settings } = useChat();
+export function ChatBody({
+  children,
+  nodeStyle,
+  viewMode,
+  toolSkin,
+  prose,
+  className,
+}: ChatBodyProps) {
+  const { messages, isEmpty, settings, answerQuestion } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const effectiveNodeStyle = nodeStyle ?? settings.nodeStyle;
+  const effectiveViewMode =
+    viewMode && (settings.developerView || viewMode === "client") ? viewMode : settings.viewMode;
+  const effectiveToolSkin = toolSkin ?? settings.toolSkin;
+  const effectiveProse = prose ?? settings.prose;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -140,7 +167,16 @@ export function ChatBody({ children, nodeStyle, className }: ChatBodyProps) {
             m.role === "user" ? (
               <UserMessage key={m.id} message={m} />
             ) : (
-              <AssistantMessage key={m.id} message={m} />
+              <AssistantMessage
+                key={m.id}
+                message={m}
+                viewMode={effectiveViewMode}
+                toolSkin={effectiveToolSkin}
+                prose={effectiveProse}
+                onAnswerQuestion={(stepId, questionId, answer) =>
+                  answerQuestion(m.id, stepId, questionId, answer)
+                }
+              />
             ),
           )}
           <div ref={bottomRef} />

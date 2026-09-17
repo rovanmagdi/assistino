@@ -5,8 +5,8 @@ It renders the full ReAct loop (reasoning → tool call → observation → answ
 a **vertical-rail timeline**, with a pulsing circle marking the tool call that is
 currently running and expandable panels showing each tool's arguments and result.
 
-Themed with the same default palette as Assistino_Engine (emerald primary on
-neutral greys) — with Inter + Space Grotesk and a full dark mode.
+Ships with a default palette (emerald primary on neutral greys), Inter +
+Space Grotesk, and a full dark mode.
 
 ## Install
 
@@ -45,7 +45,7 @@ import "@assistino/react-agent-chat/style.css";
 export function AgentPage() {
   return (
     <div style={{ height: "100vh" }}>
-      <ChatRoot apiBaseUrl="https://engine.example.com">
+      <ChatRoot apiBaseUrl="https://api.example.com">
         <ChatHeader title="ReAct Agent" subtitle="Reasoning · Tools · Observation" showSettings />
         <ChatBody>
           <DefaultEmptyState />
@@ -84,6 +84,11 @@ parts — see [Composing the parts](#composing-the-parts).
 | `colorTheme` | `"default"` | Brand preset to start from — see [Settings menu](#settings-menu) |
 | `colorThemes` | — | Per-brand overrides on the built-in presets — see [Per-brand themes](#per-brand-themes) |
 | `nodeStyle` | `"icons"` | Timeline rail markers: `"icons"` or `"dots"`. Starting value for the settings menu; `<ChatBody nodeStyle />` pins it |
+| `viewMode` | `"client"` | Who's viewing — see [View mode](#view-mode-prose-and-tool-skins). `<ChatBody viewMode />` pins it |
+| `developerView` | `true` | `false` locks the widget to the client view and removes the Developer option from the settings menu |
+| `toolSkin` | `"flat"` | How a tool call is drawn in the developer view: `"flat"` or `"terminal"` |
+| `prose` | `"explained"` | Narration density: `"explained"` or `"plain"` |
+| `responseLength` | `"long"` | Length of the final answer requested from the backend: `"short"`, `"medium"`, or `"long"` |
 | `persistSettings` | `true` | Remember settings-menu choices in localStorage |
 | `theme` | `"inherit"` | `"inherit"` \| `"system"` \| `"light"` \| `"dark"` |
 | `fullScreen` | `false` | Take the viewport (`h-screen`) instead of the parent box |
@@ -138,10 +143,9 @@ states); `accent` and `border` are the next two worth setting.
 | `radius` | Corner rounding — the smaller radii derive from it |
 | `fontSans` / `fontHeading` / `fontMono` | Type stacks |
 
-The defaults mirror Assistino_Engine's `index.css`: `--primary` is
-`oklch(0.6929 0.1396 166.55)` (emerald, kept the same in dark), `secondary` /
-`accent` are a pale mint, and the surfaces are neutral greys. `success` and
-`warning` are the widget's own additions, since the engine has no status tokens.
+By default `--primary` is `oklch(0.6929 0.1396 166.55)` (emerald, kept the
+same in dark), `secondary` / `accent` are a pale mint, and the surfaces are
+neutral greys.
 
 All of it — variables and the reset — is scoped to the widget's root element
 (`.assistino-chat`), and the stylesheet ships **without** Tailwind preflight,
@@ -158,11 +162,16 @@ widget without any code on your side:
 
 - **Appearance** — light or dark, overriding the `theme` prop for this user.
 - **Brand** — `"default"` (no preset; your CSS on `.assistino-chat` applies) or
-  one of the presets in `COLOR_THEMES`: `"assistino"` (the engine palette),
+  one of the presets in `COLOR_THEMES`: `"assistino"`,
   `"pmk"`, `"tendrix"`, or `"talentino AI"`. Each carries a light and a dark
   palette, and some also set radius, fonts, or spacing.
 - **Custom theme** — color pickers for `--primary`, `--secondary`, and
   `--accent`, stored per preset and per mode, with a reset.
+- **View mode** — Client or Developer (hidden when `developerView={false}`).
+- **Prose** — Explained or Plain.
+- **Response length** — Short, Medium, or Long.
+- **Tool display skin** — Flat or Terminal; Developer-only, so it is absent
+  when `developerView={false}` and greyed out while viewing as Client.
 - **Timeline** — icon circles on the rail, or plain dots.
 
 Choices layer on top of your CSS (an explicit pick in the UI beats a host
@@ -171,6 +180,59 @@ default) and are applied as inline variables on the widget root, never on
 pass `persistSettings={false}` to keep them per session, or
 `showSettings={false}` to hide the menu and pin `colorTheme` / `nodeStyle`
 yourself.
+
+### View mode, prose, and tool skins
+
+The same transcript can be shown to two audiences. Each of these is a
+`ChatRoot` prop for the starting value, a settings-menu choice for the end
+user, and a `<ChatBody />` prop when you want to pin it regardless of the
+menu.
+
+**`viewMode`** decides what renders at all:
+
+- `"client"` (default) hides the "Determine tool" routing steps and the
+  agent's own memory tools (`check_lessons`, `store_learning`) entirely —
+  they are absent from the DOM, not relabeled. Tool calls collapse to a
+  friendly one-liner ("Looked into the database"), arguments show as
+  `Label: value` lines instead of JSON, and the terminal skin is never used.
+  The backend is also asked for a client-toned answer (`nl2sql_style`).
+- `"developer"` shows every step with raw arguments, SQL, and result rows,
+  and asks for a technical answer.
+
+**`developerView={false}`** is the deployment kill switch: the view is
+clamped to `"client"` even against a remembered choice, and the Developer
+option and the tool-skin section disappear from the settings menu.
+
+**`prose`** is density, not vocabulary: `"explained"` streams the reasoning
+paragraphs and each tool's progress lines; `"plain"` drops both for an
+elapsed-time readout per tool call. The calls and their results stay one
+click away either way.
+
+**`toolSkin`** is cosmetic and Developer-only: `"flat"` is the inline card,
+`"terminal"` is a dark terminal window. Client always gets `"flat"`.
+
+**`responseLength`** is sent to the backend as `nl2sql_length` with every turn.
+
+```tsx
+// A customer-facing deployment: client view only, no developer toggle.
+<ChatRoot developerView={false} prose="plain" responseLength="short">…</ChatRoot>
+
+// An internal tool: developers by default, terminal skin, everything narrated.
+<ChatRoot viewMode="developer" toolSkin="terminal">…</ChatRoot>
+```
+
+`isStepHiddenFor`, `effectiveToolSkin`, and `nl2sqlStyleFor` are exported
+if you render your own timeline.
+
+### Human-in-the-loop questions
+
+When the backend needs a decision from the user, the stream carries a
+`human_question` and the run pauses on the server. The timeline renders it as a "Needs your input" card with the
+options — including what each reading actually returned, when the server
+previewed them — or a free-text field. Picking one calls `POST /api/chat/answer`
+on the same origin, with the same headers and credentials as the chat
+stream, and the open stream resumes on its own. `useChat().answerQuestion`
+and the standalone `answerQuestion` helper are exported for custom shells.
 
 ### Per-brand themes
 
@@ -259,7 +321,7 @@ footer, your own toolbar — and each one is optional:
 ```tsx
 import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agent-chat";
 
-<ChatRoot apiBaseUrl="https://engine.example.com" theme="system">
+<ChatRoot apiBaseUrl="https://api.example.com" theme="system">
   <ChatHeader actions={<MyExportButton />}>   {/* extra controls beside the built-in ones */}
     <span className="text-lg font-bold">Welcome to Tendrix AI Chat</span>
   </ChatHeader>
@@ -274,7 +336,7 @@ import { ChatRoot, ChatHeader, ChatBody, ChatInput } from "@assistino/react-agen
 | --- | --- | --- |
 | `ChatRoot` | transcript state, the SSE stream, theme, settings; renders the `.assistino-chat` root | the [`ChatRoot` props](#chatroot-props) table above |
 | `ChatHeader` | title strip, Clear, theme toggle, settings menu | `children` (your content; nothing by default), or `icon` / `title` / `subtitle` for the two-line layout; `actions`, `showClear`, `showThemeToggle`, `showSettings` |
-| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is a ready-made one: `suggestions`, `title`, `description`, `icon`, and `classNames` (`{ emptyState, title, description, suggestions, suggestion }`). `nodeStyle` — pin the timeline markers to `"icons"` or `"dots"` regardless of the settings menu. `className` |
+| `ChatBody` | scrolling transcript | `children` — the empty state to show before the first message (nothing by default). `DefaultEmptyState` is a ready-made one: `suggestions`, `title`, `description`, `icon`, and `classNames` (`{ emptyState, title, description, suggestions, suggestion }`). `nodeStyle`, `viewMode`, `toolSkin`, `prose` — pin any of these regardless of the settings menu. `className` |
 | `ChatInput` | the composer | every `ComposerOptions` field, plus `render` to replace it |
 
 Anything you render inside `ChatRoot` can call `useChat()` for the transcript
@@ -299,7 +361,7 @@ different shell can be built around the same stream. See
 import { streamChat } from "@assistino/react-agent-chat";
 
 for await (const evt of streamChat([{ role: "user", content: "hi" }], {
-  baseUrl: "https://engine.example.com",
+  baseUrl: "https://api.example.com",
 })) {
   console.log(evt.kind, evt);
 }
@@ -308,17 +370,10 @@ for await (const evt of streamChat([{ role: "user", content: "hi" }], {
 ## Develop
 
 A standalone demo app ([`demo/main.tsx`](demo/main.tsx)) mounts the widget
-full-screen against a local backend. The backend must be running first:
+full-screen against a backend listening on `http://127.0.0.1:8000`. With the
+backend running (requires Node 20.19+ / 22.12+ — e.g. `nvm use 24`):
 
 ```bash
-# from Assistino_Engine/
-uvicorn server:app --port 8000
-```
-
-Then (requires Node 20.19+ / 22.12+ — e.g. `nvm use 24`):
-
-```bash
-# from Assistino_Frontend/
 npm install
 npm run dev          # http://localhost:5173
 ```
@@ -352,15 +407,20 @@ Vite proxies `/v1` and `/api` to `http://127.0.0.1:8000` (override with
 | --- | --- |
 | `{type:"tool_status", content}` | **Thinking** node (reasoning text) |
 | `{type:"tool_start", tool_call_id, tool_name, arguments}` | **Tool** node → `running` (pulsing circle) |
-| `{type:"tool_progress", tool_call_id, message}` | appended to that node's **live progress log** (terminal-style) |
-| `{type:"tool_end", tool_call_id, result}` | same node → `done`, **rich result** panel filled |
+| `{type:"tool_progress", tool_call_id, message}` | appended to that node's **live progress log** (hidden in `"plain"` prose) |
+| `{type:"tool_sub_event", tool_call_id, detail}` | a sub-agent's own step, promoted to a peer node: `sub_thought` → **Reasoning**, `sub_tool_start` / `sub_tool_result` → **Tool** node with its result inline, `human_question` → **Needs your input** card |
+| `{type:"tool_end", tool_call_id, result}` | same node → `done`, **Observation** node with the **rich result** panel |
 | OpenAI chunk `choices[].delta.content` | **Answer** node (markdown, appended per chunk) |
 | `data: [DONE]` | stream ends |
 
+The request body carries `session_id`, and `nl2sql_style` / `nl2sql_length`
+derived from the view mode and response-length settings.
+
 State is assembled into `TimelineStep[]` per assistant message in
-[`src/components/chat-page.tsx`](src/components/chat-page.tsx) and rendered by
+[`src/components/chat-root.tsx`](src/components/chat-root.tsx) and rendered by
 [`agent-timeline.tsx`](src/components/agent-timeline.tsx) /
-[`timeline-node.tsx`](src/components/timeline-node.tsx).
+[`timeline-node.tsx`](src/components/timeline-node.tsx), with tool nodes drawn
+by the skins in [`src/components/tool-skins/`](src/components/tool-skins/).
 
 ## Rich per-tool result views
 
@@ -371,21 +431,5 @@ field/name drift absorbed by [tool-results.ts](src/lib/tool-results.ts):
 - **web_search** → clickable source chips (favicon + title)
 - **assistino_retrieval** → SQL preview + data table
 - **linkedin_*** → profile cards (confidence badge, score, match pills)
-- **assistino_hr_action** → interactive wizard form (Submit is a stub — no
-  backend action endpoint exists yet)
+- **assistino_hr_action** → interactive wizard form
 - anything else → plain-text fallback
-
-## Real-time progress
-
-The backend now has a **progress channel**: `BaseTool.progress(msg)` →
-`tool_progress` SSE events tagged with the tool call id (see
-`tools/base.py`, `agent/loop.py`, `server.py`). The UI appends these to a
-terminal-style live log inside the running tool node. web_search, the three
-linkedin tools, and retrieval emit progress today; add `self.progress(...)`
-to any tool to surface more.
-
-**Still one block, not token-stream:** the final answer and each tool's
-*result* still arrive whole (the LLM call doesn't use `stream=True` and tools
-return a single string). The UI appends answer text per chunk, so token-level
-streaming will light up automatically once the LLM call is switched to
-streaming — see `../../FRONTEND_BACKEND_REVIEW.md`.

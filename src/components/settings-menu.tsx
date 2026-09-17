@@ -1,5 +1,19 @@
 import { useEffect, useState } from "react";
-import { Check, Paintbrush, Palette, Pencil, Settings, Shapes, Sun, X } from "lucide-react";
+import {
+  AlignLeft,
+  Check,
+  MessageSquareText,
+  Paintbrush,
+  Palette,
+  Pencil,
+  Settings,
+  Shapes,
+  SquareTerminal,
+  Sun,
+  User,
+  Wrench,
+  X,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { CustomColorPicker } from "./color-picker";
@@ -12,6 +26,13 @@ import {
   type CustomColorKey,
   type NodeStyle,
 } from "../lib/color-themes";
+import {
+  RESPONSE_LENGTHS,
+  type Prose,
+  type ResponseLength,
+  type ToolSkin,
+  type ViewMode,
+} from "../lib/agent-view";
 
 const CUSTOM_COLOR_LABELS: Record<CustomColorKey, string> = {
   "--primary": "Primary",
@@ -19,7 +40,7 @@ const CUSTOM_COLOR_LABELS: Record<CustomColorKey, string> = {
   "--accent": "Accent",
 };
 
-/** Everything the menu edits. */
+/** Everything the menu edits. Optional sections render only when value and handler are both passed. */
 export interface SettingsMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,6 +56,20 @@ export interface SettingsMenuProps {
   onResetCustomColors: () => void;
   nodeStyle: NodeStyle;
   onNodeStyleChange: (style: NodeStyle) => void;
+  /** Client/Developer — what the timeline renders at all. */
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  /** Offer the Developer option. When false the section reads as fixed to Client. Defaults to true. */
+  developerView?: boolean;
+  /** Flat/Terminal — Developer-only, greyed out while viewing as Client. */
+  toolSkin?: ToolSkin;
+  onToolSkinChange?: (skin: ToolSkin) => void;
+  /** Explained/Plain — how much narration streams in on its own. */
+  prose?: Prose;
+  onProseChange?: (prose: Prose) => void;
+  /** Short/Medium/Long — how long the final answer runs. */
+  responseLength?: ResponseLength;
+  onResponseLengthChange?: (length: ResponseLength) => void;
 }
 
 /** Header gear button plus the settings panel it opens. */
@@ -51,6 +86,15 @@ export function SettingsMenu({
   onResetCustomColors,
   nodeStyle,
   onNodeStyleChange,
+  viewMode,
+  onViewModeChange,
+  developerView = true,
+  toolSkin,
+  onToolSkinChange,
+  prose,
+  onProseChange,
+  responseLength,
+  onResponseLengthChange,
 }: SettingsMenuProps) {
   const [tab, setTab] = useState<"brand" | "custom">("brand");
 
@@ -63,12 +107,13 @@ export function SettingsMenu({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onOpenChange]);
 
-  const choice = (selected: boolean) =>
+  const choice = (selected: boolean, disabled = false) =>
     cn(
       "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
       selected
         ? "border-primary bg-primary/10 text-primary"
         : "border-border hover:bg-accent hover:text-accent-foreground",
+      disabled && "cursor-not-allowed opacity-60 hover:bg-transparent hover:text-current",
     );
 
   const tabButton = (id: "brand" | "custom", Icon: typeof Palette, label: string) => (
@@ -89,6 +134,12 @@ export function SettingsMenu({
       )}
     </button>
   );
+
+  const showViewMode = viewMode !== undefined && onViewModeChange !== undefined;
+  const showProse = prose !== undefined && onProseChange !== undefined;
+  const showLength = responseLength !== undefined && onResponseLengthChange !== undefined;
+  const showToolSkin = developerView && toolSkin !== undefined && onToolSkinChange !== undefined;
+  const isClient = viewMode === "client";
 
   return (
     <>
@@ -226,6 +277,136 @@ export function SettingsMenu({
                   </div>
                 )}
               </section>
+
+              {showViewMode && (
+                <section>
+                  <SectionHeading
+                    icon={User}
+                    title="View mode"
+                    subtitle="What the agent timeline shows on this screen"
+                  />
+                  <div className={developerView ? "grid grid-cols-2 gap-2" : undefined}>
+                    <button
+                      type="button"
+                      onClick={() => onViewModeChange("client")}
+                      disabled={!developerView}
+                      className={cn(choice(viewMode === "client"), !developerView && "cursor-default")}
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="flex-1 text-left">Client</span>
+                      {viewMode === "client" && <Check className="h-4 w-4" />}
+                    </button>
+                    {developerView && (
+                      <button
+                        type="button"
+                        onClick={() => onViewModeChange("developer")}
+                        className={choice(viewMode === "developer")}
+                      >
+                        <Wrench className="h-4 w-4" />
+                        <span className="flex-1 text-left">Developer</span>
+                        {viewMode === "developer" && <Check className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    {developerView
+                      ? "Client hides internal steps entirely — routing decisions, raw SQL/JSON, and the agent's own memory writes never render."
+                      : "Fixed to Client on this deployment."}
+                  </p>
+                </section>
+              )}
+
+              {showProse && (
+                <section>
+                  <SectionHeading
+                    icon={MessageSquareText}
+                    title="Prose"
+                    subtitle="How much narration shows while the agent is working"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onProseChange("explained")}
+                      className={choice(prose === "explained")}
+                    >
+                      <MessageSquareText className="h-4 w-4" />
+                      <span className="flex-1 text-left">Explained</span>
+                      {prose === "explained" && <Check className="h-4 w-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onProseChange("plain")}
+                      className={choice(prose === "plain")}
+                    >
+                      <AlignLeft className="h-4 w-4" />
+                      <span className="flex-1 text-left">Plain</span>
+                      {prose === "plain" && <Check className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Plain drops the reasoning paragraph and step-by-step narration in favor of a
+                    quick elapsed-time readout per action — the tool call and its result are still
+                    there, just not narrated as they happen.
+                  </p>
+                </section>
+              )}
+
+              {showLength && (
+                <section>
+                  <SectionHeading
+                    icon={AlignLeft}
+                    title="Response length"
+                    subtitle="How long the final answer runs"
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    {RESPONSE_LENGTHS.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => onResponseLengthChange(value)}
+                        className={cn(choice(responseLength === value), "justify-between capitalize")}
+                      >
+                        {value}
+                        {responseLength === value && <Check className="h-4 w-4" />}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {showToolSkin && (
+                <section className={isClient ? "opacity-50" : undefined}>
+                  <SectionHeading
+                    icon={SquareTerminal}
+                    title="Tool display skin"
+                    subtitle={
+                      isClient ? "Developer-only — Client always uses the flat view" : "How a tool call is drawn"
+                    }
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={isClient}
+                      onClick={() => onToolSkinChange("flat")}
+                      className={choice(toolSkin === "flat", isClient)}
+                    >
+                      <Shapes className="h-4 w-4" />
+                      <span className="flex-1 text-left">Flat</span>
+                      {toolSkin === "flat" && <Check className="h-4 w-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isClient}
+                      onClick={() => onToolSkinChange("terminal")}
+                      className={choice(toolSkin === "terminal", isClient)}
+                    >
+                      <SquareTerminal className="h-4 w-4" />
+                      <span className="flex-1 text-left">Terminal</span>
+                      {toolSkin === "terminal" && <Check className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </section>
+              )}
 
               <section>
                 <SectionHeading

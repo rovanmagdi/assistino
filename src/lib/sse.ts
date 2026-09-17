@@ -1,4 +1,5 @@
-import type { AgentEvent } from "../types";
+import type { AgentEvent, SubEventDetail } from "../types";
+import type { ResponseLength } from "./agent-view";
 
 /** One prior turn sent back to the model as conversation history. */
 export interface ChatRequestMessage {
@@ -24,9 +25,14 @@ export interface StreamChatOptions {
   credentials?: RequestCredentials;
   /** Swap in a custom fetch (auth refresh, instrumentation, tests). */
   fetch?: typeof fetch;
+  /** Sent as `nl2sql_style`; omitted when unset. */
+  nl2sqlStyle?: "technical" | "client";
+  /** Sent as `nl2sql_length`; omitted when unset. */
+  nl2sqlLength?: ResponseLength;
 }
 
 export const DEFAULT_CHAT_PATH = "/v1/chat/completions";
+export const DEFAULT_ANSWER_PATH = "/api/chat/answer";
 
 /** POST the history to the SSE endpoint and yield normalized {@link AgentEvent}s. */
 export async function* streamChat(
@@ -43,6 +49,8 @@ export async function* streamChat(
     credentials,
     // Unbound `fetch` throws "Illegal invocation" in Chrome, hence the bind.
     fetch: fetchImpl = globalThis.fetch.bind(globalThis),
+    nl2sqlStyle,
+    nl2sqlLength,
   } = options;
 
   const res = await fetchImpl(`${baseUrl.replace(/\/$/, "")}${path}`, {
@@ -53,6 +61,8 @@ export async function* streamChat(
       messages,
       stream: true,
       session_id: sessionId,
+      ...(nl2sqlStyle ? { nl2sql_style: nl2sqlStyle } : {}),
+      ...(nl2sqlLength ? { nl2sql_length: nl2sqlLength } : {}),
     }),
     credentials,
     signal,
@@ -136,6 +146,14 @@ function mapEvent(obj: Record<string, unknown>): AgentEvent | null {
         tool: String(obj.tool_name ?? ""),
         result: String(obj.result ?? ""),
       };
+
+    case "tool_sub_event":
+      return {
+        kind: "tool_sub_event",
+        callId: String(obj.tool_call_id ?? ""),
+        tool: String(obj.tool_name ?? ""),
+        detail: obj.detail as SubEventDetail,
+      };
   }
 
   const choices = obj.choices as
@@ -147,4 +165,41 @@ function mapEvent(obj: Record<string, unknown>): AgentEvent | null {
   }
 
   return null;
+}
+
+/** Transport for {@link answerQuestion} — same origin and headers as the chat stream. */
+export type AnswerQuestionOptions = Pick<
+  StreamChatOptions,
+  "baseUrl" | "headers" | "credentials" | "signal" | "fetch"
+> & {
+  /** Path of the answer endpoint on that origin. */
+  path?: string;
+};
+
+/** Resume a run paused on a `human_question`; the open SSE stream continues on its own. */
+export async function answerQuestion(
+  questionId: string,
+  answer: string,
+  options: AnswerQuestionOptions = {},
+): Promise<void> {
+  const {
+    baseUrl = "",
+    path = DEFAULT_ANSWER_PATH,
+    headers,
+    credentials,
+    signal,
+    fetch: fetchImpl = globalThis.fetch.bind(globalThis),
+  } = options;
+
+  const res = await fetchImpl(`${baseUrl.replace(/\/$/, "")}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ question_id: questionId, answer }),
+    credentials,
+    signal,
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Answer failed (${res.status})${detail ? `: ${detail}` : ""}`);
+  }
 }
